@@ -1,48 +1,94 @@
 import { getNodeDefinition } from '@/nodes/registry';
+import type { NodeDefinition } from '@/nodes/types';
 
-import type { Workflow, WorkflowEdge } from '@/lib/types';
+import type { Workflow, WorkflowEdge, WorkflowNode } from '@/lib/types';
 import { paramsToRecord } from '@/lib/utils';
 
 import { getInputVars, topoSort } from './topo-sort';
 
-export function generatePipelineCode(workflow: Pick<Workflow, 'nodes' | 'edges' | 'params'>): string {
-  const sorted = topoSort(workflow.nodes, workflow.edges);
+export type PipelineWorkflow = Pick<Workflow, 'nodes' | 'edges' | 'params'>;
+
+export function getSortedPipelineNodes(workflow: PipelineWorkflow): WorkflowNode[] {
+  return topoSort(workflow.nodes, workflow.edges);
+}
+
+export function getSetupLines(workflow: PipelineWorkflow): string[] {
   const paramRecord = paramsToRecord(workflow.params);
   const lines = [
     'import pandas as pd',
     'import numpy as np',
     '',
     'pd.options.mode.copy_on_write = True',
-    '',
-    `params = ${JSON.stringify(paramRecord, null, 2)}`,
-    '',
   ];
 
-  for (const node of sorted) {
-    const def = getNodeDefinition(node.type);
-    const inputVars = getInputVars(node.id, workflow.edges, def.inputs);
-    const outputVar = `node_${node.id}`;
-    lines.push(`# ${def.label}${node.title ? `: ${node.title}` : ''}`);
-    lines.push(def.compile(node.config, inputVars, outputVar, paramRecord, { mode: 'export' }));
-    lines.push('');
+  if (workflow.params.length > 0) {
+    lines.push('', `params = ${JSON.stringify(paramRecord, null, 2)}`);
+  }
+
+  lines.push('');
+  return lines;
+}
+
+export function getNodeCommentLines(node: WorkflowNode, def: NodeDefinition): string[] {
+  const lines = [`# ${def.label}${node.title ? `: ${node.title}` : ''}`, `# Node ID: ${node.id}`, `# Type: ${node.type}`];
+
+  if (def.category === 'source') {
+    const summary = def.configSummary(node.config);
+    lines.push(`# Source file: ${summary} — adjust the file path below as needed`);
+  }
+
+  return lines;
+}
+
+export function getNodeMarkdown(node: WorkflowNode, def: NodeDefinition): string {
+  const lines = [
+    `## ${def.label}${node.title ? `: ${node.title}` : ''}`,
+    '',
+    `Node ID: \`${node.id}\``,
+    `Type: \`${node.type}\``,
+  ];
+
+  const summary = def.configSummary(node.config);
+  if (summary) {
+    lines.push('', `Config: ${summary}`);
+  }
+
+  if (def.category === 'source') {
+    lines.push('', '> Provide the data file at the path shown in the code cell (adjust as needed).');
   }
 
   return lines.join('\n');
 }
 
-export function generateNodeCode(
-  nodeId: string,
-  workflow: Pick<Workflow, 'nodes' | 'edges' | 'params'>,
+export function compileNodeExportCode(
+  node: WorkflowNode,
+  workflow: PipelineWorkflow,
 ): string {
+  const def = getNodeDefinition(node.type);
+  const paramRecord = paramsToRecord(workflow.params);
+  const inputVars = getInputVars(node.id, workflow.edges, def.inputs);
+  const outputVar = `node_${node.id}`;
+  return def.compile(node.config, inputVars, outputVar, paramRecord, { mode: 'export' });
+}
+
+export function generatePipelineCode(workflow: PipelineWorkflow): string {
+  const lines = [...getSetupLines(workflow)];
+
+  for (const node of getSortedPipelineNodes(workflow)) {
+    const def = getNodeDefinition(node.type);
+    lines.push(...getNodeCommentLines(node, def));
+    lines.push(compileNodeExportCode(node, workflow));
+    lines.push('');
+  }
+
+  return lines.join('\n').trimEnd();
+}
+
+export function generateNodeCode(nodeId: string, workflow: PipelineWorkflow): string {
   const node = workflow.nodes.find((n) => n.id === nodeId);
   if (!node) return '';
 
-  const def = getNodeDefinition(node.type);
-  const paramRecord = paramsToRecord(workflow.params);
-  const inputVars = getInputVars(nodeId, workflow.edges, def.inputs);
-  const outputVar = `node_${node.id}`;
-
-  return def.compile(node.config, inputVars, outputVar, paramRecord, { mode: 'export' });
+  return compileNodeExportCode(node, workflow);
 }
 
 export function validateConnection(

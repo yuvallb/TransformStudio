@@ -66,7 +66,7 @@ describe('generatePipelineCode', () => {
     expect(groupIdx).toBeLessThan(outIdx);
   });
 
-  it('includes params dict in exported script', () => {
+  it('includes params dict when workflow has parameters', () => {
     const withParams: Workflow = {
       ...workflow,
       params: [

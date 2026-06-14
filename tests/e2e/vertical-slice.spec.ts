@@ -116,6 +116,7 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export' }).click();
+  await page.getByRole('button', { name: 'Python script (.py)' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('pipeline.py');
 });

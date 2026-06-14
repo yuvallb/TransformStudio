@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { History, Play, Share2, Download, FilePlus, GitCompare } from 'lucide-react';
 
-import { downloadPythonScript } from '@/export/python-script';
 import { useExecution } from '@/hooks/useExecution';
 import { Button } from '@/ui/components/ui/button';
+import { ExportDialog } from '@/ui/ExportDialog';
 import { ParamDialog } from '@/ui/ParamDialog';
 import { VersionHistory } from '@/ui/VersionHistory';
 import { useUiStore } from '@/state/ui-store';
@@ -14,16 +14,13 @@ export function Header() {
   const paramCount = workflow.params.length;
   const { runPipeline } = useExecution();
   const [paramDialogOpen, setParamDialogOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const saveStatus = useUiStore((s) => s.saveStatus);
   const [versionOpen, setVersionOpen] = useState(false);
   const [openSaveOnMount, setOpenSaveOnMount] = useState(false);
   const compareMode = useUiStore((s) => s.compareMode);
   const setCompareMode = useUiStore((s) => s.setCompareMode);
-
-  const handleExport = () => {
-    downloadPythonScript(workflow);
-  };
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : null;
@@ -106,12 +103,19 @@ export function Header() {
             <Share2 className="size-4" />
             Share
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} aria-label="Export code">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExportOpen(true)}
+            aria-label="Export code"
+          >
             <Download className="size-4" />
             Export
           </Button>
         </div>
       </header>
+
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
 
       <ParamDialog
         open={paramDialogOpen}
