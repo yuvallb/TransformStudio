@@ -11,6 +11,7 @@ import { useExecution } from '@/hooks/useExecution';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { installTestBridge } from '@/test/bridge';
 import { useUiStore } from '@/state/ui-store';
+import { useWorkflowStore } from '@/state/workflow-store';
 import { Footer } from './layout/Footer';
 import { Header } from './layout/Header';
 import { Sidebar } from './layout/Sidebar';
@@ -22,12 +23,22 @@ if (import.meta.env.DEV) {
 function Workspace() {
   useWorkflow();
   useExecution();
+  const isHydrated = useWorkflowStore((s) => s.isHydrated);
   const bottomPanelOpen = useUiStore((s) => s.bottomPanelOpen);
   const rightPanelTab = useUiStore((s) => s.rightPanelTab);
   const setRightPanelTab = useUiStore((s) => s.setRightPanelTab);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      {!isHydrated && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          aria-busy="true"
+          aria-label="Restoring workflow"
+        >
+          <p className="text-sm text-muted-foreground">Restoring workflow…</p>
+        </div>
+      )}
       <Header />
       <div className="flex min-h-0 flex-1">
         <Sidebar />

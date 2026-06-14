@@ -1,5 +1,5 @@
 import { db } from '@/data/db';
-import type { DatasetRecord, NodeDataset } from '@/lib/types';
+import type { DatasetRecord, NodeDataset, Workflow } from '@/lib/types';
 import { createId } from '@/lib/utils';
 
 export async function saveDataset(
@@ -54,6 +54,27 @@ export function datasetRecordToNodeDataset(record: DatasetRecord): NodeDataset {
     filename: record.filename,
     data: new Uint8Array(record.data),
   };
+}
+
+export function buildDatasetsMapForWorkflow(
+  workflow: Workflow,
+  records: DatasetRecord[],
+): Record<string, NodeDataset> {
+  const nodeIds = new Set(workflow.nodes.map((n) => n.id));
+  return Object.fromEntries(
+    records
+      .filter((r) => nodeIds.has(r.nodeId))
+      .map((r) => [r.nodeId, datasetRecordToNodeDataset(r)]),
+  );
+}
+
+export async function deleteOrphanedDatasets(workflowId: string, workflow: Workflow): Promise<void> {
+  const nodeIds = new Set(workflow.nodes.map((n) => n.id));
+  const records = await loadDatasetsForWorkflow(workflowId);
+  const orphanIds = records.filter((r) => !nodeIds.has(r.nodeId)).map((r) => r.id);
+  if (orphanIds.length > 0) {
+    await db.datasets.bulkDelete(orphanIds);
+  }
 }
 
 export async function copyDatasetsToWorkflow(

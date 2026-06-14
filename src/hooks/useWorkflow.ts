@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import {
-  datasetRecordToNodeDataset,
+  buildDatasetsMapForWorkflow,
   deleteDatasetForNode,
   loadDatasetsForWorkflow,
   saveDataset,
@@ -86,10 +86,7 @@ export function useWorkflow() {
 
         if (stored) {
           const records = await loadDatasetsForWorkflow(stored.id);
-          const restoredDatasets = Object.fromEntries(
-            records.map((r) => [r.nodeId, datasetRecordToNodeDataset(r)]),
-          );
-          loadWorkflowState(stored, restoredDatasets);
+          loadWorkflowState(stored, buildDatasetsMapForWorkflow(stored, records));
         } else {
           const current = useWorkflowStore.getState().workflow;
           await saveWorkflow(current);
@@ -160,14 +157,21 @@ export function useWorkflow() {
 }
 
 export async function restoreWorkflowFromStorage(): Promise<void> {
+  const state = useWorkflowStore.getState();
+
+  if (state.isHydrated) {
+    const records = await loadDatasetsForWorkflow(state.workflow.id);
+    useWorkflowStore.setState({
+      datasets: buildDatasetsMapForWorkflow(state.workflow, records),
+    });
+    state.markAllStale();
+    return;
+  }
+
   const stored = await getMostRecentWorkflow();
   if (!stored) return;
 
   const records = await loadDatasetsForWorkflow(stored.id);
-  const restoredDatasets = Object.fromEntries(
-    records.map((r) => [r.nodeId, datasetRecordToNodeDataset(r)]),
-  );
-
-  useWorkflowStore.getState().loadWorkflowState(stored, restoredDatasets);
-  useWorkflowStore.getState().markAllStale();
+  state.loadWorkflowState(stored, buildDatasetsMapForWorkflow(stored, records));
+  state.markAllStale();
 }

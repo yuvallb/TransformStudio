@@ -89,10 +89,10 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
   const onNodesChange: OnNodesChange<Node<TransformNodeData>> = useCallback(
     (changes) => {
       for (const change of changes) {
-        if (change.type === 'position' && change.position) {
+        if (change.type === 'position' && change.position && !compareMode) {
           updateNodePosition(change.id, change.position);
         }
-        if (change.type === 'remove') {
+        if (change.type === 'remove' && !compareMode) {
           removeNode(change.id);
         }
         if (change.type === 'select') {
@@ -104,22 +104,24 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         }
       }
     },
-    [updateNodePosition, removeNode, selectNode, selectedNodeId],
+    [updateNodePosition, removeNode, selectNode, selectedNodeId, compareMode],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
+      if (compareMode) return;
       for (const change of changes) {
         if (change.type === 'remove') {
           removeEdge(change.id);
         }
       }
     },
-    [removeEdge],
+    [removeEdge, compareMode],
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      if (compareMode) return;
       if (!connection.source || !connection.target) return;
 
       const sourceNode = workflow.nodes.find((n) => n.id === connection.source);
@@ -142,7 +144,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         targetHandle: connection.targetHandle ?? undefined,
       });
     },
-    [workflow.nodes, workflow.edges, addEdgeToStore],
+    [workflow.nodes, workflow.edges, addEdgeToStore, compareMode],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -159,6 +161,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         y: event.clientY - bounds.top - 40,
       };
 
+      if (compareMode) return;
+
       const nodeType = event.dataTransfer.getData('application/transformstudio-node');
       if (nodeType) {
         useWorkflowStore.getState().addNode(nodeType as WorkflowNode['type'], position);
@@ -170,7 +174,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         onDropFile(file, position);
       }
     },
-    [onDropFile],
+    [onDropFile, compareMode],
   );
 
   const onPaneClick = useCallback(() => {
@@ -191,7 +195,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         nodesConnectable={!compareMode}
         elementsSelectable
         fitView
-        deleteKeyCode={['Backspace', 'Delete']}
+        deleteKeyCode={compareMode ? null : ['Backspace', 'Delete']}
         defaultEdgeOptions={{ type: 'smoothstep' }}
         proOptions={{ hideAttribution: true }}
       >

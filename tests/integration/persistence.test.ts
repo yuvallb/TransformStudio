@@ -68,7 +68,7 @@ describe('persistence integration', () => {
     });
 
     const { getMostRecentWorkflow } = await import('@/data/workflow-repo');
-    const { loadDatasetsForWorkflow, datasetRecordToNodeDataset } = await import(
+    const { loadDatasetsForWorkflow, buildDatasetsMapForWorkflow } = await import(
       '@/data/dataset-repo'
     );
 
@@ -82,7 +82,7 @@ describe('persistence integration', () => {
 
     useWorkflowStore.getState().loadWorkflowState(
       restored!,
-      Object.fromEntries(datasets.map((r) => [r.nodeId, datasetRecordToNodeDataset(r)])),
+      buildDatasetsMapForWorkflow(restored!, datasets),
     );
 
     const state = useWorkflowStore.getState();

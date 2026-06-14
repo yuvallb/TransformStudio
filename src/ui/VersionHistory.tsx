@@ -3,8 +3,9 @@ import { GitBranch, GitCompare, History, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  buildDatasetsMapForWorkflow,
   copyDatasetsToWorkflow,
-  datasetRecordToNodeDataset,
+  deleteOrphanedDatasets,
   loadDatasetsForWorkflow,
 } from '@/data/dataset-repo';
 import { saveWorkflow } from '@/data/workflow-repo';
@@ -88,15 +89,16 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
     }
   };
 
-  const loadDatasetsIntoStore = async (targetWorkflowId: string) => {
-    const records = await loadDatasetsForWorkflow(targetWorkflowId);
-    return Object.fromEntries(records.map((r) => [r.nodeId, datasetRecordToNodeDataset(r)]));
+  const loadDatasetsIntoStore = async (targetWorkflow: typeof workflow) => {
+    const records = await loadDatasetsForWorkflow(targetWorkflow.id);
+    return buildDatasetsMapForWorkflow(targetWorkflow, records);
   };
 
   const handleRevert = async (snapshotId: string) => {
     try {
       const restored = await revertToSnapshot(snapshotId, workflow);
-      const datasets = await loadDatasetsIntoStore(restored.id);
+      await deleteOrphanedDatasets(restored.id, restored);
+      const datasets = await loadDatasetsIntoStore(restored);
       setCompareMode(null);
       clearRuntime();
       loadWorkflowState(restored, datasets);

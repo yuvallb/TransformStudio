@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 
 import { kernelClient } from '@/engine/kernel-client';
 import { restoreWorkflowFromStorage } from '@/hooks/useWorkflow';
-import { useWorkflowStore } from '@/state/workflow-store';
 import type {
   KernelStatus,
   LoadCsvOptions,
@@ -56,7 +55,6 @@ export function PyodideProvider({ children }: { children: ReactNode }) {
       try {
         await kernelClient.restart();
         await restoreWorkflowFromStorage();
-        useWorkflowStore.getState().markAllStale();
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         setLastError({ message });

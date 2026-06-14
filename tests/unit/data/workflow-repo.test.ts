@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/data/db';
 import {
+  buildDatasetsMapForWorkflow,
   datasetRecordToNodeDataset,
+  deleteOrphanedDatasets,
   loadDatasetsForWorkflow,
   saveDataset,
 } from '@/data/dataset-repo';
@@ -93,5 +95,51 @@ describe('dataset-repo', () => {
 
     const restored = datasetRecordToNodeDataset(records[0]!);
     expect(new TextDecoder().decode(restored.data)).toBe('a,b\n1,2');
+  });
+
+  it('buildDatasetsMapForWorkflow ignores orphaned dataset records', () => {
+    const workflow = sampleWorkflow();
+    const records = [
+      {
+        id: 'd1',
+        workflowId: 'wf-1',
+        nodeId: 'n1',
+        filename: 'data.csv',
+        mimeType: 'text/csv',
+        data: new ArrayBuffer(0),
+        importedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'd2',
+        workflowId: 'wf-1',
+        nodeId: 'deleted-node',
+        filename: 'old.csv',
+        mimeType: 'text/csv',
+        data: new ArrayBuffer(0),
+        importedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+
+    const map = buildDatasetsMapForWorkflow(workflow, records);
+    expect(Object.keys(map)).toEqual(['n1']);
+  });
+
+  it('deleteOrphanedDatasets removes records for missing nodes', async () => {
+    const workflow = sampleWorkflow();
+    await saveDataset('wf-1', 'n1', {
+      nodeId: 'n1',
+      filename: 'data.csv',
+      data: new TextEncoder().encode('a,b'),
+    });
+    await saveDataset('wf-1', 'orphan', {
+      nodeId: 'orphan',
+      filename: 'old.csv',
+      data: new TextEncoder().encode('x,y'),
+    });
+
+    await deleteOrphanedDatasets('wf-1', workflow);
+
+    const records = await loadDatasetsForWorkflow('wf-1');
+    expect(records.map((r) => r.nodeId)).toEqual(['n1']);
   });
 });

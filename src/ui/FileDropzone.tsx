@@ -26,6 +26,8 @@ export function FileDropzone() {
 
   const ingestFile = useCallback(
     async (file: File, position: { x: number; y: number }) => {
+      if (!useWorkflowStore.getState().isHydrated) return;
+
       const isCsv = isCsvFile(file);
       const isJson = isJsonFile(file);
       if (!isCsv && !isJson) return;

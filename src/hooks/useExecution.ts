@@ -14,6 +14,7 @@ export function useExecution() {
 
   const workflow = useWorkflowStore((s) => s.workflow);
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
+  const isHydrated = useWorkflowStore((s) => s.isHydrated);
   const datasets = useWorkflowStore((s) => s.datasets);
   const paramOverrides = useWorkflowStore((s) => s.paramOverrides);
   const clearStale = useWorkflowStore((s) => s.clearStale);
@@ -130,13 +131,14 @@ export function useExecution() {
   }, [runPipeline]);
 
   useEffect(() => {
+    if (!isHydrated) return;
     if (staleNodeIds.size > 0) {
       scheduleRun();
     }
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [staleNodeIds, scheduleRun]);
+  }, [staleNodeIds, isHydrated, scheduleRun]);
 
   return { runPipeline, scheduleRun };
 }

@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Versioning tests share IndexedDB — run serially to avoid cross-test interference.
+test.describe.configure({ mode: 'serial' });
+
 test('Flow F: save version, edit, and revert', async ({ page }) => {
   test.setTimeout(300000);
 
@@ -39,6 +42,8 @@ test('Flow F: page reload restores workflow', async ({ page }) => {
   await page.getByRole('button', { name: 'Filter', exact: true }).click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
+  // Wait for debounced autosave (2s) after the Filter node was added
+  await page.waitForTimeout(3000);
   await expect(page.getByTestId('save-status')).toContainText('Saved', { timeout: 10000 });
 
   await page.reload();
