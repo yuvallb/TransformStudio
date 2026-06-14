@@ -65,4 +65,22 @@ describe('generatePipelineCode', () => {
     expect(filterIdx).toBeLessThan(groupIdx);
     expect(groupIdx).toBeLessThan(outIdx);
   });
+
+  it('includes params dict in exported script', () => {
+    const withParams: Workflow = {
+      ...workflow,
+      params: [
+        { name: 'country', type: 'string', default: 'US' },
+        { name: 'min_revenue', type: 'number', default: 1000 },
+      ],
+      nodes: workflow.nodes.map((n) =>
+        n.id === 'flt' ? { ...n, config: { expression: 'df["country"] == {country}' } } : n,
+      ),
+    };
+
+    const code = generatePipelineCode(withParams);
+    expect(code).toContain('params = {');
+    expect(code).toContain('"country": "US"');
+    expect(code).toContain("params['country']");
+  });
 });

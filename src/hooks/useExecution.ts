@@ -15,6 +15,7 @@ export function useExecution() {
   const workflow = useWorkflowStore((s) => s.workflow);
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
   const datasets = useWorkflowStore((s) => s.datasets);
+  const paramOverrides = useWorkflowStore((s) => s.paramOverrides);
   const clearStale = useWorkflowStore((s) => s.clearStale);
   const consumeDeletedNodeIds = useWorkflowStore((s) => s.consumeDeletedNodeIds);
 
@@ -43,6 +44,7 @@ export function useExecution() {
         staleNodeIds,
         runtimeByNode: byNodeId,
         datasets,
+        paramOverrides,
       });
 
       if (request.nodes.length === 0 && deleteNodeIds.length === 0) {
@@ -87,6 +89,7 @@ export function useExecution() {
         updatedRuntime,
         datasets,
         executedIds,
+        paramOverrides,
       );
 
       const statesObj = Object.fromEntries(updatedRuntime.entries());
@@ -109,6 +112,7 @@ export function useExecution() {
     workflow,
     staleNodeIds,
     datasets,
+    paramOverrides,
     byNodeId,
     clearStale,
     consumeDeletedNodeIds,

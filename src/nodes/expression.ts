@@ -18,6 +18,10 @@ export function translateExpression(expression: string): string {
   return expression.replace(/\{(\w+)\}/g, "params['$1']");
 }
 
+export function hasParamRefs(expression: string): boolean {
+  return /\{(\w+)\}/.test(expression);
+}
+
 export function normalizeExpression(expression: string, inputVar: string): string {
   return translateExpression(expression.trim()).replace(/\bdf\b/g, inputVar);
 }

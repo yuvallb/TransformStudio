@@ -121,7 +121,11 @@ gc.collect()
     }
   }
 
-  pyodide.globals.set('params', request.params);
+  try {
+    pyodide.runPython(`params = ${JSON.stringify(request.params)}`);
+  } catch (err) {
+    return { nodeResults, error: parsePythonException(err) };
+  }
 
   for (const node of request.nodes) {
     if (!node.isStale) continue;

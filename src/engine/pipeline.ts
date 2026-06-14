@@ -7,9 +7,8 @@ import type {
   Workflow,
   WorkflowNode,
 } from '@/lib/types';
-import { paramsToRecord } from '@/lib/utils';
-
 import { computeDatasetFingerprint, computeFingerprint } from './fingerprint';
+import { getEffectiveParams, resolveParamsForNode } from './param-substitute';
 import { getInputVars, getUpstreamNodeIds, getUpstreamSchemas, topoSort } from './topo-sort';
 import type { ValidateContext } from '@/nodes/types';
 
@@ -18,6 +17,7 @@ export interface BuildPipelineOptions {
   staleNodeIds: Set<string>;
   runtimeByNode: Map<string, NodeRuntimeState>;
   datasets: Record<string, NodeDataset>;
+  paramOverrides?: Record<string, unknown>;
 }
 
 async function resolveNodeFingerprint(
@@ -39,7 +39,12 @@ async function resolveNodeFingerprint(
     return runtimeByNode.get(upstreamId)?.fingerprint ?? '';
   });
 
-  return computeFingerprint(node, paramRecord, upstreamFingerprints, datasetFingerprint);
+  return computeFingerprint(
+    node,
+    resolveParamsForNode(node, paramRecord),
+    upstreamFingerprints,
+    datasetFingerprint,
+  );
 }
 
 function upstreamIsReady(
@@ -83,15 +88,16 @@ export function getValidateContext(
   return {
     inputVarCount: inputVars.length,
     inputRowCounts: inputRowCounts.length === inputPorts.length ? inputRowCounts : undefined,
+    workflowParamNames: workflow.params.map((p) => p.name),
   };
 }
 
 export async function buildPipelineRequest(
   options: BuildPipelineOptions,
 ): Promise<ExecutePipelineRequest> {
-  const { workflow, staleNodeIds, runtimeByNode, datasets } = options;
+  const { workflow, staleNodeIds, runtimeByNode, datasets, paramOverrides } = options;
   const sorted = topoSort(workflow.nodes, workflow.edges);
-  const paramRecord = paramsToRecord(workflow.params);
+  const paramRecord = getEffectiveParams(workflow.params, paramOverrides);
   const nodes: ExecutePipelineRequest['nodes'] = [];
   const plannedIds = new Set<string>();
 
@@ -172,9 +178,10 @@ export async function updateRuntimeFingerprints(
   runtimeByNode: Map<string, NodeRuntimeState>,
   datasets: Record<string, NodeDataset>,
   executedNodeIds: string[],
+  paramOverrides?: Record<string, unknown>,
 ): Promise<Map<string, NodeRuntimeState>> {
   const next = new Map(runtimeByNode);
-  const paramRecord = paramsToRecord(workflow.params);
+  const paramRecord = getEffectiveParams(workflow.params, paramOverrides);
 
   for (const nodeId of executedNodeIds) {
     const node = workflow.nodes.find((n) => n.id === nodeId);

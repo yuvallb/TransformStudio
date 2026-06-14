@@ -18,7 +18,7 @@ export const concat: NodeDefinition = {
     return { axis: 0 as 0 | 1 };
   },
 
-  validate(config, inputSchemas, context?: ValidateContext) {
+  validate(config, _inputSchemas, context?: ValidateContext) {
     const errors = [];
     const axis = parseAxis(config);
 

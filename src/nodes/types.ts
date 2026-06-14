@@ -15,6 +15,8 @@ export interface ValidateContext {
   inputVarCount?: number;
   /** Row counts per connected input, when all previews are available. */
   inputRowCounts?: number[];
+  /** Workflow parameter names for validating {param} references. */
+  workflowParamNames?: string[];
 }
 
 export type InspectorField =

@@ -116,6 +116,7 @@ export function Inspector() {
           upstreamSchemas={upstreamSchemas}
           errors={errorsByField.get(field.key) ?? []}
           onUpdate={update}
+          workflowParamNames={workflow.params.map((p) => p.name)}
         />
       ))}
 
@@ -130,12 +131,14 @@ function InspectorFieldRenderer({
   upstreamSchemas,
   errors,
   onUpdate,
+  workflowParamNames,
 }: {
   field: InspectorField;
   config: Record<string, unknown>;
   upstreamSchemas: ReturnType<typeof getUpstreamSchemasForNode>;
   errors: string[];
   onUpdate: (key: string, value: unknown) => void;
+  workflowParamNames: string[];
 }) {
   const schemaIndex = 'schemaIndex' in field ? (field.schemaIndex ?? 0) : 0;
   const schema = upstreamSchemas[schemaIndex] ?? [];
@@ -215,6 +218,7 @@ function InspectorFieldRenderer({
           <ExpressionInput
             value={String(config[field.key] ?? '')}
             onChange={(v) => onUpdate(field.key, v)}
+            workflowParamNames={workflowParamNames}
           />
         );
       case 'mapping':

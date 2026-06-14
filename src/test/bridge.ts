@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/state/workflow-store';
 interface TestBridge {
   connectNodes: (sourceId: string, targetId: string) => string | null;
   getNodeIds: () => string[];
+  addParam: (name: string, type: string, defaultValue: unknown) => string | null;
 }
 
 declare global {
@@ -18,6 +19,13 @@ export function installTestBridge(): void {
     },
     getNodeIds() {
       return useWorkflowStore.getState().workflow.nodes.map((n) => n.id);
+    },
+    addParam(name, type, defaultValue) {
+      return useWorkflowStore.getState().addParam({
+        name,
+        type: type as 'string' | 'number' | 'date' | 'enum' | 'boolean',
+        default: defaultValue,
+      });
     },
   };
 }

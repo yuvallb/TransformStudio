@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
+import { getNodesReferencingParam } from '@/engine/param-substitute';
 import { getDownstreamNodeIds } from '@/engine/topo-sort';
+import { defaultParamValue, validateParamName } from '@/lib/param-validation';
 import { WORKFLOW_SCHEMA_VERSION } from '@/lib/constants';
 import type {
   NodeDataset,
@@ -32,6 +34,7 @@ interface WorkflowState {
   staleNodeIds: Set<string>;
   datasets: Record<string, NodeDataset>;
   deletedNodeIds: string[];
+  paramOverrides: Record<string, unknown>;
 
   addNode: (type: WorkflowNode['type'], position: { x: number; y: number }) => string;
   removeNode: (nodeId: string) => void;
@@ -41,11 +44,17 @@ interface WorkflowState {
   removeEdge: (edgeId: string) => void;
   selectNode: (nodeId: string | null) => void;
   markStale: (nodeId: string) => void;
+  markStaleForParams: (paramNames: string[]) => void;
   markAllStale: () => void;
   clearStale: () => void;
   setDataset: (nodeId: string, dataset: NodeDataset) => void;
   consumeDeletedNodeIds: () => string[];
   setWorkflowName: (name: string) => void;
+  addParam: (param: Omit<WorkflowParam, 'default'> & { default?: unknown }) => string | null;
+  updateParam: (name: string, updates: Partial<Omit<WorkflowParam, 'name'>>) => string | null;
+  removeParam: (name: string) => void;
+  setParamOverrides: (overrides: Record<string, unknown>) => void;
+  clearParamOverrides: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -54,6 +63,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   staleNodeIds: new Set(),
   datasets: {},
   deletedNodeIds: [],
+  paramOverrides: {},
 
   addNode(type, position) {
     const def = getNodeDefinition(type);
@@ -209,6 +219,21 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     });
   },
 
+  markStaleForParams(paramNames) {
+    set((state) => {
+      const stale = new Set(state.staleNodeIds);
+      for (const paramName of paramNames) {
+        for (const nodeId of getNodesReferencingParam(state.workflow, paramName)) {
+          stale.add(nodeId);
+          for (const downstreamId of getDownstreamNodeIds(nodeId, state.workflow.edges)) {
+            stale.add(downstreamId);
+          }
+        }
+      }
+      return { staleNodeIds: stale };
+    });
+  },
+
   markAllStale() {
     set((state) => ({ staleNodeIds: new Set(state.workflow.nodes.map((n) => n.id)) }));
   },
@@ -246,6 +271,97 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set((state) => ({
       workflow: { ...state.workflow, name, updatedAt: new Date().toISOString() },
     }));
+  },
+
+  addParam(param) {
+    const state = get();
+    const existingNames = state.workflow.params.map((p) => p.name);
+    const error = validateParamName(param.name, existingNames);
+    if (error) return error;
+
+    const entry: WorkflowParam = {
+      name: param.name.trim(),
+      type: param.type,
+      label: param.label,
+      options: param.options,
+      default: param.default ?? defaultParamValue(param.type, param.options),
+    };
+
+    set({
+      workflow: {
+        ...state.workflow,
+        params: [...state.workflow.params, entry],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    get().markStaleForParams([entry.name]);
+
+    return null;
+  },
+
+  updateParam(name, updates) {
+    const state = get();
+    const index = state.workflow.params.findIndex((p) => p.name === name);
+    if (index < 0) return 'Parameter not found';
+
+    const current = state.workflow.params[index]!;
+    const nextType = updates.type ?? current.type;
+    const nextOptions = updates.options ?? current.options;
+    let nextDefault = updates.default ?? current.default;
+    if (updates.type && updates.type !== current.type && updates.default === undefined) {
+      nextDefault = defaultParamValue(nextType, nextOptions);
+    }
+
+    const updated: WorkflowParam = {
+      ...current,
+      ...updates,
+      name: current.name,
+      type: nextType,
+      options: nextOptions,
+      default: nextDefault,
+    };
+
+    const params = [...state.workflow.params];
+    params[index] = updated;
+
+    set({
+      workflow: {
+        ...state.workflow,
+        params,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    get().markStaleForParams([name]);
+
+    return null;
+  },
+
+  removeParam(name) {
+    set((state) => {
+      const overrides = { ...state.paramOverrides };
+      delete overrides[name];
+
+      return {
+        workflow: {
+          ...state.workflow,
+          params: state.workflow.params.filter((p) => p.name !== name),
+          updatedAt: new Date().toISOString(),
+        },
+        paramOverrides: overrides,
+      };
+    });
+    get().markStaleForParams([name]);
+  },
+
+  setParamOverrides(overrides) {
+    set({ paramOverrides: overrides });
+    get().markStaleForParams(Object.keys(overrides));
+  },
+
+  clearParamOverrides() {
+    set({ paramOverrides: {} });
   },
 }));
 

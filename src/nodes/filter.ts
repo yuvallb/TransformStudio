@@ -1,4 +1,5 @@
-import { extractBracketColumns, isExpressionSafe, normalizeExpression } from './expression';
+import { extractParamRefs } from '@/engine/param-substitute';
+import { extractBracketColumns, hasParamRefs, isExpressionSafe, normalizeExpression } from './expression';
 import type { NodeDefinition } from './types';
 
 export { isExpressionSafe } from './expression';
@@ -14,7 +15,7 @@ export const filter: NodeDefinition = {
     return { expression: '' };
   },
 
-  validate(config, inputSchemas) {
+  validate(config, inputSchemas, context) {
     const errors = [];
     const expression = typeof config.expression === 'string' ? config.expression.trim() : '';
 
@@ -37,6 +38,13 @@ export const filter: NodeDefinition = {
       }
     }
 
+    const paramNames = new Set(context?.workflowParamNames ?? []);
+    for (const ref of extractParamRefs(expression)) {
+      if (!paramNames.has(ref)) {
+        errors.push({ field: 'expression', message: `Unknown parameter "{${ref}}" — define it in Parameters` });
+      }
+    }
+
     return errors;
   },
 
@@ -45,6 +53,10 @@ export const filter: NodeDefinition = {
     const raw = typeof config.expression === 'string' ? config.expression.trim() : '';
     const input = inputVars[0];
     const normalized = normalizeExpression(raw, input);
+
+    if (hasParamRefs(raw)) {
+      return `${outputVar} = ${input}[${normalized}]`;
+    }
 
     return `${outputVar} = ${input}[${input}.eval(${JSON.stringify(normalized)})]`;
   },

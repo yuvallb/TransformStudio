@@ -29,4 +29,14 @@ describe('computeFingerprint', () => {
     const b = await computeFingerprint(baseNode, {}, ['upstream2']);
     expect(a).not.toBe(b);
   });
+
+  it('returns different hash when referenced param values change', async () => {
+    const node = {
+      ...baseNode,
+      config: { expression: 'country == {country}' },
+    };
+    const a = await computeFingerprint(node, { country: 'US' }, []);
+    const b = await computeFingerprint(node, { country: 'UK' }, []);
+    expect(a).not.toBe(b);
+  });
 });
