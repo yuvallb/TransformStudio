@@ -1,4 +1,5 @@
 import json
+import re
 
 import numpy as np
 import pandas as pd
@@ -84,6 +85,12 @@ def profile_df(df):
 
 WHITELISTED_CALLS = {"abs", "round", "min", "max"}
 
+_PARAM_REF_PATTERN = re.compile(r"\{(\w+)\}")
+
+
+def _preprocess_param_refs(expr):
+    return _PARAM_REF_PATTERN.sub(r"params['\1']", expr)
+
 
 def validate_expression(expr):
     import ast
@@ -91,8 +98,10 @@ def validate_expression(expr):
     if not isinstance(expr, str) or not expr.strip():
         return {"valid": False, "error": "Expression is empty"}
 
+    normalized = _preprocess_param_refs(expr.strip())
+
     try:
-        tree = ast.parse(expr.strip(), mode="eval")
+        tree = ast.parse(normalized, mode="eval")
     except SyntaxError as exc:
         return {"valid": False, "error": str(exc)}
 

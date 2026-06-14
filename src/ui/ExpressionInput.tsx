@@ -5,6 +5,7 @@ import { python } from '@codemirror/lang-python';
 import { extractParamRefs } from '@/engine/param-substitute';
 import { kernelClient } from '@/engine/kernel-client';
 import { cn } from '@/lib/utils';
+import { translateExpression } from '@/nodes/expression';
 
 interface ExpressionInputProps {
   value: string;
@@ -34,7 +35,7 @@ export function ExpressionInput({
     }
     setValidating(true);
     try {
-      const result = await kernelClient.validateExpression(expr);
+      const result = await kernelClient.validateExpression(translateExpression(expr.trim()));
       setError(result.valid ? null : (result.error ?? 'Invalid expression'));
     } catch {
       setError('Validation failed');

@@ -47,6 +47,16 @@ describe('workflow params', () => {
     expect(dup).toBeTruthy();
   });
 
+  it('rejects enum params without options', () => {
+    const error = useWorkflowStore.getState().addParam({
+      name: 'region',
+      type: 'enum',
+      default: '',
+      options: [],
+    });
+    expect(error).toContain('at least one option');
+  });
+
   it('adds and removes params', () => {
     useWorkflowStore.getState().addParam({ name: 'country', type: 'string', default: 'US' });
     expect(useWorkflowStore.getState().workflow.params).toHaveLength(1);

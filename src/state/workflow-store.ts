@@ -287,6 +287,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       default: param.default ?? defaultParamValue(param.type, param.options),
     };
 
+    if (entry.type === 'enum' && (!entry.options || entry.options.length === 0)) {
+      return 'Enum parameters require at least one option';
+    }
+
     set({
       workflow: {
         ...state.workflow,
@@ -321,6 +325,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       options: nextOptions,
       default: nextDefault,
     };
+
+    if (updated.type === 'enum' && (!updated.options || updated.options.length === 0)) {
+      return 'Enum parameters require at least one option';
+    }
 
     const params = [...state.workflow.params];
     params[index] = updated;
@@ -361,7 +369,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   clearParamOverrides() {
+    const previous = get().paramOverrides;
+    if (Object.keys(previous).length === 0) return;
     set({ paramOverrides: {} });
+    get().markStaleForParams(Object.keys(previous));
   },
 }));
 

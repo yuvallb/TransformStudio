@@ -117,4 +117,9 @@ describe('expression validation integration', () => {
     const result = await client.validateExpression('revenue > 1000');
     expect(result.valid).toBe(true);
   });
+
+  it('accepts param references', async () => {
+    const result = await client.validateExpression('df["country"] == {country}');
+    expect(result.valid).toBe(true);
+  });
 });
