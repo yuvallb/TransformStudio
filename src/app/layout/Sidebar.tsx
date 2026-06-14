@@ -1,3 +1,5 @@
+import { NodePalette } from '@/canvas/NodePalette';
+
 export function Sidebar() {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card">
@@ -6,11 +8,7 @@ export function Sidebar() {
           Node Library
         </p>
       </div>
-      <div className="flex flex-1 items-center justify-center p-4">
-        <p className="text-center text-xs text-muted-foreground">
-          Node palette will appear here in a future milestone.
-        </p>
-      </div>
+      <NodePalette />
     </aside>
   );
 }

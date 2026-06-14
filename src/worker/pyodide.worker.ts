@@ -2,12 +2,15 @@ import * as Comlink from 'comlink';
 import { loadPyodide, version, type PyodideInterface } from 'pyodide';
 
 import type {
+  ExecutePipelineRequest,
+  ExecutePipelineResult,
   LoadCsvOptions,
   LoadCsvResult,
   RunPythonResult,
   StructuredError,
 } from '@/lib/types';
 
+import { executePipeline } from './kernel';
 import { getPythonHelpers } from './python/helpers';
 
 let pyodide: PyodideInterface | null = null;
@@ -124,6 +127,28 @@ const kernelApi = {
       return { preview: toSerializable(preview) as LoadCsvResult['preview'] };
     } catch (err) {
       return { error: parsePythonException(err) };
+    }
+  },
+
+  async executePipeline(request: ExecutePipelineRequest): Promise<ExecutePipelineResult> {
+    try {
+      const api = await ensureInit();
+      const result = await executePipeline(api, request);
+      const serializedResults: ExecutePipelineResult['nodeResults'] = {};
+
+      for (const [nodeId, state] of Object.entries(result.nodeResults)) {
+        serializedResults[nodeId] = {
+          ...state,
+          preview: state.preview ? (toSerializable(state.preview) as typeof state.preview) : null,
+        };
+      }
+
+      return { nodeResults: serializedResults, error: result.error };
+    } catch (err) {
+      return {
+        nodeResults: {},
+        error: parsePythonException(err),
+      };
     }
   },
 };

@@ -1,6 +1,8 @@
 import * as Comlink from 'comlink';
 
 import type {
+  ExecutePipelineRequest,
+  ExecutePipelineResult,
   KernelStatus,
   LoadCsvOptions,
   LoadCsvResult,
@@ -237,6 +239,25 @@ export class KernelClient {
     }
 
     return this.api!.ping();
+  }
+
+  async executePipeline(request: ExecutePipelineRequest): Promise<ExecutePipelineResult> {
+    await this.init();
+
+    if (!this.api) {
+      return { nodeResults: {}, error: { message: 'Worker not available' } };
+    }
+
+    const result = await this.api.executePipeline(request);
+
+    if (result.error) {
+      return {
+        nodeResults: result.nodeResults,
+        error: parsePythonError(result.error),
+      };
+    }
+
+    return result;
   }
 }
 
