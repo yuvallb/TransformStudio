@@ -45,6 +45,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
   const setHydrated = useWorkflowStore((s) => s.setHydrated);
   const markAllStale = useWorkflowStore((s) => s.markAllStale);
   const setCompareMode = useUiStore((s) => s.setCompareMode);
+  const setSharedImport = useUiStore((s) => s.setSharedImport);
   const clearRuntime = useRuntimeStore((s) => s.reset);
 
   const [versions, setVersions] = useState<VersionSnapshot[]>([]);
@@ -100,6 +101,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
       await deleteOrphanedDatasets(restored.id, restored);
       const datasets = await loadDatasetsIntoStore(restored);
       setCompareMode(null);
+      setSharedImport(false);
       clearRuntime();
       loadWorkflowState(restored, datasets);
       markAllStale();
@@ -121,6 +123,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
         );
         const datasets = await copyDatasetsToWorkflow(snapshot.workflowId, forked.id, nodeIdMap);
         setCompareMode(null);
+        setSharedImport(false);
         clearRuntime();
         setHydrated(false);
         loadWorkflowState(forked, datasets);
@@ -191,6 +194,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
       const fresh = newWorkflow();
       await saveWorkflow(fresh);
       setCompareMode(null);
+      setSharedImport(false);
       clearRuntime();
       setHydrated(true);
       toast.success('New workflow created');

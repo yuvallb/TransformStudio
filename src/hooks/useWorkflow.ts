@@ -8,6 +8,7 @@ import {
   saveDataset,
 } from '@/data/dataset-repo';
 import { saveWorkflow, getMostRecentWorkflow } from '@/data/workflow-repo';
+import { decodeWorkflowFromHash, parseHashOnLoad, clearWorkflowHash } from '@/sharing/url';
 import { createSnapshot } from '@/versioning/snapshot';
 import { AUTO_SNAPSHOT_EDIT_COUNT, AUTOSAVE_DEBOUNCE_MS } from '@/lib/constants';
 import { useRuntimeStore } from '@/state/runtime-store';
@@ -28,6 +29,7 @@ export function useWorkflow() {
   const markAllStale = useWorkflowStore((s) => s.markAllStale);
 
   const setSaveStatus = useUiStore((s) => s.setSaveStatus);
+  const setSharedImport = useUiStore((s) => s.setSharedImport);
 
   datasetsRef.current = datasets;
 
@@ -82,6 +84,20 @@ export function useWorkflow() {
 
     async function restore() {
       try {
+        const shareHash = parseHashOnLoad();
+        if (shareHash) {
+          const shared = await decodeWorkflowFromHash(shareHash);
+          if (cancelled) return;
+
+          useRuntimeStore.getState().reset();
+          loadWorkflowState(shared, {});
+          setSharedImport(true);
+          clearWorkflowHash();
+          await saveWorkflow(shared);
+          return;
+        }
+
+        setSharedImport(false);
         const stored = await getMostRecentWorkflow();
         if (cancelled) return;
 
@@ -108,7 +124,7 @@ export function useWorkflow() {
     return () => {
       cancelled = true;
     };
-  }, [loadWorkflowState, setHydrated, markAllStale]);
+  }, [loadWorkflowState, setHydrated, markAllStale, setSharedImport]);
 
   useEffect(() => {
     if (!isHydrated) return;

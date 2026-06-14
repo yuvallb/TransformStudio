@@ -47,6 +47,8 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
   const runtime = useRuntimeStore((s) => s.byNodeId.get(workflowNode.id));
   const isStale = useWorkflowStore((s) => s.staleNodeIds.has(workflowNode.id));
   const compareMode = useUiStore((s) => s.compareMode);
+  const isSharedImport = useUiStore((s) => s.isSharedImport);
+  const hasDataset = useWorkflowStore((s) => Boolean(s.datasets[workflowNode.id]));
   const diffStatus = compareMode
     ? getNodeDiffStatus(workflowNode.id, compareMode.diff)
     : null;
@@ -59,6 +61,9 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
   const rowColText = preview
     ? `${preview.totalRows.toLocaleString()} rows × ${preview.totalColumns} cols`
     : 'No preview';
+
+  const showImportPlaceholder =
+    isSharedImport && def.category === 'source' && !hasDataset && !isGhost;
 
   const showInput = def.inputs.length > 0;
 
@@ -105,7 +110,13 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
       </div>
 
       <div className="px-3 py-2">
-        <p className="truncate text-xs text-muted-foreground">{summary}</p>
+        {showImportPlaceholder ? (
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            Import your dataset
+          </p>
+        ) : (
+          <p className="truncate text-xs text-muted-foreground">{summary}</p>
+        )}
         {status === 'error' && runtime?.error && (
           <p className="mt-1 line-clamp-2 text-[10px] text-red-600">{runtime.error}</p>
         )}

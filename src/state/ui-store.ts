@@ -21,6 +21,7 @@ interface UiState {
   saveStatus: SaveStatus;
   versionPanelOpen: boolean;
   compareMode: CompareMode | null;
+  isSharedImport: boolean;
 
   setBottomPanelOpen: (open: boolean) => void;
   setCodeViewMode: (mode: CodeViewMode) => void;
@@ -29,6 +30,7 @@ interface UiState {
   setSaveStatus: (status: SaveStatus) => void;
   setVersionPanelOpen: (open: boolean) => void;
   setCompareMode: (mode: CompareMode | null) => void;
+  setSharedImport: (shared: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -39,6 +41,7 @@ export const useUiStore = create<UiState>((set) => ({
   saveStatus: 'idle',
   versionPanelOpen: false,
   compareMode: null,
+  isSharedImport: false,
 
   setBottomPanelOpen(open) {
     set({ bottomPanelOpen: open });
@@ -66,5 +69,9 @@ export const useUiStore = create<UiState>((set) => ({
 
   setCompareMode(mode) {
     set({ compareMode: mode });
+  },
+
+  setSharedImport(shared) {
+    set({ isSharedImport: shared });
   },
 }));

@@ -33,6 +33,10 @@ export const nodeRegistry: Partial<Record<NodeType, NodeDefinition>> = {
   output,
 };
 
+export function isKnownNodeType(type: string): type is NodeType {
+  return type in nodeRegistry;
+}
+
 export function getNodeDefinition(type: NodeType): NodeDefinition {
   const def = nodeRegistry[type];
   if (!def) {

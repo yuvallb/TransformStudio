@@ -2,7 +2,7 @@ import { getNodeDefinition } from '@/nodes/registry';
 import type { NodeDefinition } from '@/nodes/types';
 
 import type { Workflow, WorkflowEdge, WorkflowNode } from '@/lib/types';
-import { paramsToRecord } from '@/lib/utils';
+import { paramsToRecord, sanitizeCommentLine } from '@/lib/utils';
 
 import { getInputVars, topoSort } from './topo-sort';
 
@@ -30,10 +30,11 @@ export function getSetupLines(workflow: PipelineWorkflow): string[] {
 }
 
 export function getNodeCommentLines(node: WorkflowNode, def: NodeDefinition): string[] {
-  const lines = [`# ${def.label}${node.title ? `: ${node.title}` : ''}`, `# Node ID: ${node.id}`, `# Type: ${node.type}`];
+  const titleSuffix = node.title ? `: ${sanitizeCommentLine(node.title)}` : '';
+  const lines = [`# ${def.label}${titleSuffix}`, `# Node ID: ${node.id}`, `# Type: ${node.type}`];
 
   if (def.category === 'source') {
-    const summary = def.configSummary(node.config);
+    const summary = sanitizeCommentLine(def.configSummary(node.config));
     lines.push(`# Source file: ${summary} — adjust the file path below as needed`);
   }
 
@@ -41,8 +42,9 @@ export function getNodeCommentLines(node: WorkflowNode, def: NodeDefinition): st
 }
 
 export function getNodeMarkdown(node: WorkflowNode, def: NodeDefinition): string {
+  const titleSuffix = node.title ? `: ${sanitizeCommentLine(node.title)}` : '';
   const lines = [
-    `## ${def.label}${node.title ? `: ${node.title}` : ''}`,
+    `## ${def.label}${titleSuffix}`,
     '',
     `Node ID: \`${node.id}\``,
     `Type: \`${node.type}\``,

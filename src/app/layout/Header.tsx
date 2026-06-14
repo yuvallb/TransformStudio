@@ -5,6 +5,7 @@ import { useExecution } from '@/hooks/useExecution';
 import { Button } from '@/ui/components/ui/button';
 import { ExportDialog } from '@/ui/ExportDialog';
 import { ParamDialog } from '@/ui/ParamDialog';
+import { ShareDialog } from '@/ui/ShareDialog';
 import { VersionHistory } from '@/ui/VersionHistory';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
@@ -15,6 +16,7 @@ export function Header() {
   const { runPipeline } = useExecution();
   const [paramDialogOpen, setParamDialogOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const saveStatus = useUiStore((s) => s.saveStatus);
   const [versionOpen, setVersionOpen] = useState(false);
@@ -99,7 +101,7 @@ export function Header() {
               </span>
             )}
           </Button>
-          <Button variant="outline" size="sm" disabled aria-label="Share workflow">
+          <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} aria-label="Share workflow">
             <Share2 className="size-4" />
             Share
           </Button>
@@ -116,6 +118,7 @@ export function Header() {
       </header>
 
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
+      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
 
       <ParamDialog
         open={paramDialogOpen}

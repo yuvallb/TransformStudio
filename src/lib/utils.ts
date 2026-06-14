@@ -37,3 +37,8 @@ export function paramsToRecord(
 ): Record<string, unknown> {
   return Object.fromEntries(params.map((p) => [p.name, p.default]));
 }
+
+/** Collapse newlines so user-controlled text is safe inside `#` comment lines. */
+export function sanitizeCommentLine(text: string): string {
+  return text.replace(/[\r\n]+/g, ' ').trim();
+}

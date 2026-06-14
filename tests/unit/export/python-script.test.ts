@@ -39,6 +39,17 @@ describe('generatePythonScript', () => {
     expect(script).toContain('Adjust source file paths');
   });
 
+  it('sanitizes newlines in workflow name for comment safety', () => {
+    const malicious: Workflow = {
+      ...workflow,
+      name: 'Evil\nimport os; os.system("rm -rf /")',
+    };
+    const script = generatePythonScript(malicious);
+
+    expect(script).toContain('# Workflow: Evil import os; os.system("rm -rf /")');
+    expect(script).not.toMatch(/^import os/m);
+  });
+
   it('includes imports, params, and per-node section comments', () => {
     const script = generatePythonScript(workflow);
     const pipeline = generatePipelineCode(workflow);

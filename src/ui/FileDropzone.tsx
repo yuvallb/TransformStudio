@@ -23,6 +23,7 @@ export function FileDropzone() {
   const selectNode = useWorkflowStore((s) => s.selectNode);
   const markAllStale = useWorkflowStore((s) => s.markAllStale);
   const setRightPanelTab = useUiStore((s) => s.setRightPanelTab);
+  const setSharedImport = useUiStore((s) => s.setSharedImport);
 
   const ingestFile = useCallback(
     async (file: File, position: { x: number; y: number }) => {
@@ -49,6 +50,8 @@ export function FileDropzone() {
         data,
       });
 
+      setSharedImport(false);
+
       if (isCsv) {
         const text = new TextDecoder().decode(data.slice(0, 4096));
         const delimiter = detectDelimiter(text);
@@ -59,7 +62,7 @@ export function FileDropzone() {
       setRightPanelTab('profile');
       markAllStale();
     },
-    [addNode, setDataset, updateNodeConfig, selectNode, markAllStale, setRightPanelTab],
+    [addNode, setDataset, updateNodeConfig, selectNode, markAllStale, setRightPanelTab, setSharedImport],
   );
 
   const handleDropFile = useCallback(
