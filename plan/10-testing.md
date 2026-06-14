@@ -71,14 +71,17 @@ describe('filter node', () => {
 | `snapshot.ts` | Create, revert, fork |
 | `diff.ts` | Added/removed/changed nodes detected correctly |
 
-## Integration tests (Vitest)
+## Integration tests (Vitest in Browser Mode)
 
 ### Worker RPC (with Pyodide)
 
-Run in a test environment with Pyodide loaded (slower, but critical).
+> **CRITICAL ARCHITECTURAL NOTE:** Running Pyodide inside standard Vitest (Node.js/jsdom) is highly problematic because Pyodide relies heavily on browser-native features like WebAssembly, Web Workers, and Fetch. Trying to polyfill these in Node.js leads to fragile and brittle test suites.
+>
+> Therefore, all integration tests that load Pyodide **MUST run in Vitest's Browser Mode** (using Playwright under the hood) rather than Node.js/jsdom. This guarantees a real browser environment and ensures test fidelity.
 
 ```typescript
 // tests/integration/kernel.test.ts
+// Configured to run in Vitest Browser Mode
 describe('execution kernel', () => {
   let kernel: KernelClient;
 

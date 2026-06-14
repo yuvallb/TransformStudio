@@ -58,6 +58,11 @@ flowchart TB
 
 **Why a worker is non-negotiable:** Pyodide is ~6–10 MB and Python execution is CPU-heavy. Running on the main thread would freeze pan/zoom/selection on the canvas.
 
+**Worker crash recovery:** Since Pyodide runs in a Web Worker, a memory overflow (OOM) or an infinite loop in Python will crash the worker. The main thread will implement:
+1. A **heartbeat/ping mechanism** to detect if the worker becomes unresponsive during heavy computations.
+2. An `onerror` and `onmessageerror` listener on the Worker instance.
+3. On crash detection, the UI will display a non-blocking toast ("Python runtime crashed. Restarting..."), automatically spin up a fresh worker, restore the workflow from IndexedDB, re-import the active datasets, and re-execute the pipeline incrementally to restore the user's session without data loss.
+
 ## Data flow
 
 ### Import
@@ -104,4 +109,8 @@ flowchart TB
 - All Python execution is sandboxed inside Pyodide (no filesystem, no network by default).
 - Shared URLs contain only workflow logic — no user data.
 - No `eval` of user-supplied Python in v1 (custom Python node deferred).
-- Expression nodes (filter, derive) use a constrained expression parser, not raw `exec`.
+- **Constrained expression evaluation:** Expression nodes (filter, derive) allow users to write custom expressions (e.g., `df["revenue"] > 1000`). To prevent arbitrary code execution or injection (e.g., calling `__import__('os')` or accessing private attributes):
+  1. The expression is parsed in Python using Python's native `ast.parse()` module.
+  2. An AST node visitor inspects the parsed tree and whitelists only safe AST nodes (e.g., `Name`, `Num`, `Str`, `Compare`, `BinOp`, `UnaryOp`, `Subscript`, `Attribute`).
+  3. Any node that attempts function calls (except whitelisted math/string functions), imports, or attribute writes is rejected before execution.
+  4. Once validated, the expression is evaluated using Pandas `df.eval()` or a safe execution context with a restricted globals/locals dictionary.

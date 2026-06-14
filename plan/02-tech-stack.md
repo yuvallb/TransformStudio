@@ -5,7 +5,7 @@
 | Concern | Choice | Rationale |
 |---------|--------|-----------|
 | Build / dev | **Vite + TypeScript** | Fast HMR, static output, trivial GitHub Pages deploy |
-| UI framework | **React 18** | Large ecosystem; pairs well with React Flow |
+| UI framework | **React 19** | Modern state features, native ref/worker handling; fully compatible with React Flow |
 | DAG canvas | **React Flow** (`@xyflow/react`) | De-facto standard for node/edge editors; pan/zoom/selection built-in |
 | App state | **Zustand** | Lightweight; works cleanly with React Flow's controlled mode |
 | Styling | **Tailwind CSS + shadcn/ui** | Fast path to modern, accessible UI components |
@@ -26,8 +26,8 @@
 | Concern | Choice | Rationale |
 |---------|--------|-----------|
 | Browser storage | **Dexie** (IndexedDB wrapper) | Stores datasets, workflows, version snapshots |
-| Compression | **pako** (gzip) | Compress workflow JSON for URL sharing |
-| URL encoding | **base64url** | Safe for hash fragments |
+| Compression | **Native CompressionStream** (gzip) | Built-in browser API; zero bundle-size overhead, avoiding external libraries |
+| URL encoding | **Native Base64** | Safe URL-safe base64 encoding/decoding via native `btoa`/`atob` and character replaces |
 
 ## Testing
 
@@ -51,7 +51,7 @@
 |---------|---------|
 | `pandas` | Core data manipulation |
 | `numpy` | Numeric operations (Pandas dependency) |
-| `micropip` | Runtime package loading if needed |
+| `micropip` | Runtime package loading if needed (optional; prefer `pyodide.loadPackage` for core packages to speed up cold start) |
 
 ## Explicitly not in v1
 

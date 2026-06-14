@@ -55,7 +55,7 @@ TransformStudio/
 │   │   ├── kernel.ts           # Execution loop (topo, cache, run)
 │   │   └── python/
 │   │       ├── helpers.py      # preview_df, profile_df (loaded into Pyodide)
-│   │       └── helpers.ts      # TS loader that injects helpers.py into worker
+│   │       └── helpers.ts      # TS loader that injects helpers.py using Vite `?raw` import
 │   ├── data/
 │   │   ├── db.ts               # Dexie database definition
 │   │   ├── workflow-repo.ts    # CRUD for workflows
@@ -131,6 +131,20 @@ export const nodeRegistry: Record<NodeType, NodeDefinition> = {
 ### Worker isolation
 
 Everything under `src/worker/` runs in the Web Worker. It must not import React or DOM APIs. Communication with the main thread is exclusively via Comlink RPC defined in `kernel-client.ts`.
+
+### Raw asset loading for Python helpers
+
+To keep the Python helper code clean and maintainable with syntax highlighting, we store it in a standard `.py` file (`helpers.py`). In `helpers.ts`, we load this file as a raw string using Vite's native raw import syntax:
+
+```typescript
+import helpersPy from './python/helpers.py?raw';
+
+export function getPythonHelpers(): string {
+  return helpersPy;
+}
+```
+
+This avoids any custom build steps or loader scripts, providing an excellent developer experience (DX).
 
 ### State boundaries
 

@@ -36,7 +36,7 @@ type WorkflowEdge = {
 };
 
 type WorkflowParam = {
-  name: string;
+  name: string;                // Must be a valid Python identifier (regex: ^[a-zA-Z_][a-zA-Z0-9_]*$) and cannot be a Python keyword (e.g., import, def, class, etc.)
   type: 'string' | 'number' | 'date' | 'enum' | 'boolean';
   default: unknown;
   label?: string;
@@ -71,11 +71,16 @@ type NodeType =
 Every node type implements this interface:
 
 ```typescript
+interface NodeInputPort {
+  id: string;                  // e.g. 'left', 'right', or 'input'
+  label: string;               // e.g. 'Left Dataset', 'Right Dataset', or 'Input'
+}
+
 interface NodeDefinition {
   type: NodeType;
   label: string;
   category: 'source' | 'transform' | 'output';
-  inputs: number;              // 0 for sources, 1 for most transforms, 2 for join
+  inputs: NodeInputPort[];     // Empty for sources, e.g. [{ id: 'input', label: 'Input' }] for transforms, [{ id: 'left', label: 'Left' }, { id: 'right', label: 'Right' }] for join
   outputs: number;             // always 1 in v1
 
   defaultConfig(): Record<string, unknown>;
@@ -115,6 +120,7 @@ type InspectorField =
 type ColumnSchema = {
   name: string;
   dtype: 'int' | 'float' | 'string' | 'bool' | 'datetime' | 'unknown';
+  pandasDtype: string;         // Raw pandas dtype (e.g. 'int64', 'float64', 'category', 'object') for precise casting and advanced operations
   nullable: boolean;
 };
 ```

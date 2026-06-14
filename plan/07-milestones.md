@@ -60,11 +60,13 @@ Estimated relative effort:
 - [ ] Integrate Comlink for typed RPC
 - [ ] Lazy-load Pyodide on first use with progress indicator
 - [ ] Load pandas + numpy packages
-- [ ] Write Python helper module: `preview_df()`, `profile_df()`
+- [ ] Configure Pandas options: **enable Copy-on-Write** (`pd.options.mode.copy_on_write = True`) for memory efficiency
+- [ ] Write Python helper module: `preview_df()`, `profile_df()` with robust sampling/empty checks
 - [ ] Implement `runPython(code) → result` RPC method
 - [ ] Implement `loadCsv(bytes, options) → preview` RPC method
 - [ ] Error capture: Python exceptions → structured error objects
-- [ ] Main thread hook: `usePyodide()` with loading state
+- [ ] Implement **Web Worker crash detection & heartbeat/ping mechanism** on the main thread
+- [ ] Main thread hook: `usePyodide()` with loading state and auto-restart crash recovery
 - [ ] Smoke test UI: button that loads Pyodide, creates a DataFrame, returns `head()`
 
 ### DoD
@@ -88,10 +90,11 @@ CSV Source → Filter → GroupBy → Output
 ### Tasks
 
 - [ ] Integrate React Flow: canvas with pan/zoom, node rendering, edge connections
-- [ ] Define node contract interface (`NodeDefinition`)
-- [ ] Implement 4 node types: `source.csv`, `filter`, `groupby`, `output`
+- [ ] Define node contract interface (`NodeDefinition`) with rich input ports schema
+- [ ] Implement 4 node types: `source.csv`, `filter`, `groupby`, `output` (using safe `params` dict passing)
 - [ ] Node palette: drag to add
 - [ ] Build execution engine: topo sort, fingerprint cache, incremental recompute
+- [ ] Implement **active memory cleanup** in the execution engine (explicitly run `del namespace["node_<id>"]` and trigger Python garbage collection `import gc; gc.collect()` on node deletion)
 - [ ] Wire engine to Pyodide worker
 - [ ] Drag-and-drop CSV import → auto-create source node
 - [ ] Virtualized preview grid (glide-data-grid) showing selected node's output

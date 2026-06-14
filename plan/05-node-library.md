@@ -26,10 +26,10 @@ Source nodes receive file bytes from the main thread at import time. The worker 
 | **Filter** | `filter` | 1 | `expression` (e.g. `df["revenue"] > 1000`) | `out = inp[inp.eval(expr)]` or bracket notation |
 | **Select** | `select` | 1 | `columns: string[]`, `mode: 'keep' \| 'drop'` | `out = inp[columns]` or `out = inp.drop(columns)` |
 | **Rename** | `rename` | 1 | `mapping: Record<string, string>` | `out = inp.rename(columns=mapping)` |
-| **Derive** | `derive` | 1 | `column`, `expression` | `out = inp.copy(); out[column] = ...` |
+| **Derive** | `derive` | 1 | `column`, `expression` | `out = inp.assign(**{column: expression})` (optimized for Copy-on-Write) |
 | **Sort** | `sort` | 1 | `columns: string[]`, `ascending: boolean[]` | `out = inp.sort_values(by=columns, ascending=ascending)` |
 | **GroupBy** | `groupby` | 1 | `groupColumns: string[]`, `aggregations: { column, func }[]` | `out = inp.groupby(...).agg(...).reset_index()` |
-| **Join** | `join` | 2 | `leftOn`, `rightOn`, `how: 'inner' \| 'left' \| 'right' \| 'outer'` | `out = left.merge(right, left_on=..., right_on=..., how=...)` |
+| **Join** | `join` | 2 | `leftOn`, `rightOn`, `how: 'inner' \| 'left' \| 'right' \| 'outer'`, `suffixes?: [string, string]` | `out = left.merge(right, left_on=..., right_on=..., how=..., suffixes=suffixes || ('_left', '_right'))` |
 | **Concat** | `concat` | 2+ | `axis: 0 \| 1` | `out = pd.concat([inp1, inp2], axis=axis)` |
 | **Drop NA** | `dropna` | 1 | `columns?: string[]`, `how: 'any' \| 'all'` | `out = inp.dropna(subset=columns, how=how)` |
 | **Fill NA** | `fillna` | 1 | `columns?: string[]`, `value` | `out = inp.fillna({col: value for col in columns})` |

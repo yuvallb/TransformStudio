@@ -113,14 +113,26 @@ Params are part of the `Workflow` schema and included in shared URLs and version
 
 ## F6: Sharing (Flow C)
 
-### URL-based sharing (zero backend)
+### URL-based sharing (zero backend) (CTO Refinement: Native Compression)
 
-```
+To avoid external dependencies and keep the bundle size minimal, we will use the browser's native **CompressionStream** API (available in all modern browsers) instead of `pako`.
+
+```javascript
+// Native sharing flow:
 1. User clicks "Share"
 2. Serialize workflow (nodes, edges, params) — NO data
-3. JSON.stringify → gzip (pako) → base64url encode
-4. Set window.location.hash = "w=" + encoded
-5. Copy full URL to clipboard
+3. Convert JSON string to Uint8Array: const bytes = new TextEncoder().encode(jsonStr)
+4. Compress bytes via native gzip:
+   const cs = new CompressionStream('gzip');
+   const writer = cs.writable.getWriter();
+   writer.write(bytes);
+   writer.close();
+   const compressedBytes = await new Response(cs.readable).arrayBuffer();
+5. Encode to URL-safe Base64:
+   const base64 = btoa(String.fromCharCode(...new Uint8Array(compressedBytes)))
+     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+6. Set window.location.hash = "w=" + base64
+7. Copy full URL to clipboard
 ```
 
 ### Size limits
@@ -161,10 +173,16 @@ Params are part of the `Workflow` schema and included in shared URLs and version
 | **Fork** | Create a new workflow from any snapshot |
 | **Compare** | JSON diff between two snapshots (added/removed/changed nodes) |
 
-### Compare UI
+### Compare UI (CTO Refinement: Visual DAG Diffing)
 
-- Side-by-side or unified diff of the two workflow JSONs.
-- Highlight: added nodes (green), removed nodes (red), changed config (yellow).
+Instead of a raw text-based JSON diff which is difficult for users to interpret, we will implement a **Visual DAG Diff** mode directly on the React Flow canvas:
+1. **Canvas Overlay:** When comparing two versions, the canvas enters "Diff Mode".
+2. **Color-coded Nodes:**
+   - **Green border/background:** Nodes that exist in the target version but not in the base version (Added).
+   - **Red dashed border/background:** Nodes that exist in the base version but were deleted in the target version (Removed).
+   - **Yellow border/background:** Nodes whose configuration or parameters were modified (Modified).
+   - **Grayed out:** Unchanged nodes.
+3. **Interactive Inspector:** Clicking a modified (yellow) node shows a side-by-side property diff in the inspector panel, highlighting the exact config changes.
 
 ## F8: Export (Flow E)
 

@@ -99,13 +99,33 @@
 | **Impact** | Low — deferred to stretch |
 | **Mitigation** | Not in v1. If pursued: clearly label as "best-effort", support only a subset of nodes, show warnings for unsupported operations. |
 
+## R11: Pyodide Worker Crash / Out of Memory (OOM)
+
+| | |
+|---|---|
+| **Risk** | Silently crashing the Web Worker or throwing uncatchable OOM errors during heavy operations or large file processing, hanging the UI in a permanent "running" state |
+| **Likelihood** | Medium |
+| **Impact** | High — app hang, loss of unsaved work |
+| **Mitigation** | Implement worker heartbeat/ping mechanism and `onerror` listeners. Show a friendly toast on crash, automatically restart the worker, restore state from IndexedDB, and re-run active datasets. |
+| **Verification** | Simulate worker crash in E2E tests (e.g., calling `self.close()` in worker); verify UI displays crash toast and successfully recovers. |
+
+## R12: Browser Storage Quota Exceeded
+
+| | |
+|---|---|
+| **Risk** | Storing multiple large datasets (50MB+ each) and their version history in IndexedDB exceeds the browser's storage quota, causing autosave or imports to fail |
+| **Likelihood** | Medium |
+| **Impact** | Medium — data loss, import failures |
+| **Mitigation** | Implement dataset deduplication via content hashing (store the same file once) and a pruning/retention policy for old version snapshots. Use `navigator.storage.estimate()` to show storage usage and warn before limits are hit. |
+| **Verification** | Import 5 × 50 MB files; verify storage usage is reported correctly and pruning triggers when nearing limits. |
+
 ## Risk priority matrix
 
 ```
 Impact
-  High │ R1 R2 R5 R6          R4
+  High │ R1 R2 R5 R6   R11    R4
        │ R3
-  Med  │ R7 R8               R9
+  Med  │ R7 R8         R12    R9
        │
   Low  │                     R10
        └─────────────────────────
@@ -113,6 +133,6 @@ Impact
               Likelihood
 ```
 
-**Address first:** R1, R2, R6 (architectural — must be right from M1/M2).
-**Monitor:** R3, R4, R5 (operational — mitigate with UX and guards).
+**Address first:** R1, R2, R6, R11 (architectural — must be right from M1/M2).
+**Monitor:** R3, R4, R5, R12 (operational — mitigate with UX and guards).
 **Defer:** R10 (stretch feature).

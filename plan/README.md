@@ -6,7 +6,7 @@ This folder contains the architecture and implementation plan for building **Tra
 
 | Area | Decision |
 |------|----------|
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 19 + TypeScript + Vite |
 | DAG canvas | React Flow (`@xyflow/react`) |
 | State | Zustand |
 | UI | Tailwind CSS + shadcn/ui |
