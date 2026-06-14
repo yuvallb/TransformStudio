@@ -11,6 +11,7 @@ import { paramsToRecord } from '@/lib/utils';
 
 import { computeDatasetFingerprint, computeFingerprint } from './fingerprint';
 import { getInputVars, getUpstreamNodeIds, getUpstreamSchemas, topoSort } from './topo-sort';
+import type { ValidateContext } from '@/nodes/types';
 
 export interface BuildPipelineOptions {
   workflow: Workflow;
@@ -58,6 +59,33 @@ function upstreamIsReady(
   });
 }
 
+export function getValidateContext(
+  node: WorkflowNode,
+  workflow: Workflow,
+  runtimeByNode: Map<string, NodeRuntimeState>,
+  inputPorts: { id: string; label: string }[],
+): ValidateContext {
+  const inputVars = getInputVars(node.id, workflow.edges, inputPorts);
+  const inputRowCounts: number[] = [];
+
+  for (const port of inputPorts) {
+    const edge = workflow.edges.find(
+      (e) =>
+        e.target === node.id && (e.targetHandle ?? inputPorts[0]?.id) === port.id,
+    );
+    if (!edge) continue;
+    const rows = runtimeByNode.get(edge.source)?.preview?.totalRows;
+    if (typeof rows === 'number') {
+      inputRowCounts.push(rows);
+    }
+  }
+
+  return {
+    inputVarCount: inputVars.length,
+    inputRowCounts: inputRowCounts.length === inputPorts.length ? inputRowCounts : undefined,
+  };
+}
+
 export async function buildPipelineRequest(
   options: BuildPipelineOptions,
 ): Promise<ExecutePipelineRequest> {
@@ -91,7 +119,8 @@ export async function buildPipelineRequest(
     }
 
     const inputSchemas = getUpstreamSchemas(node.id, workflow.edges, runtimeByNode, def.inputs);
-    if (def.validate(node.config, inputSchemas).length > 0) {
+    const validateContext = getValidateContext(node, workflow, runtimeByNode, def.inputs);
+    if (def.validate(node.config, inputSchemas, validateContext).length > 0) {
       continue;
     }
 

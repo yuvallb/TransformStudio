@@ -33,4 +33,13 @@ describe('join', () => {
     );
     expect(errors.some((e) => e.field === 'leftOn')).toBe(true);
   });
+
+  it('requires both inputs connected', () => {
+    const errors = join.validate(
+      { leftOn: 'customer_id', rightOn: 'customer_id' },
+      [leftSchema, rightSchema],
+      { inputVarCount: 1 },
+    );
+    expect(errors.some((e) => e.field === 'inputs')).toBe(true);
+  });
 });

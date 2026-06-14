@@ -1,4 +1,4 @@
-import type { NodeDefinition } from './types';
+import type { NodeDefinition, ValidateContext } from './types';
 
 function parseAxis(config: Record<string, unknown>): 0 | 1 {
   return config.axis === 1 ? 1 : 0;
@@ -18,17 +18,16 @@ export const concat: NodeDefinition = {
     return { axis: 0 as 0 | 1 };
   },
 
-  validate(config, inputSchemas) {
+  validate(config, inputSchemas, context?: ValidateContext) {
     const errors = [];
     const axis = parseAxis(config);
-    const left = inputSchemas[0] ?? [];
-    const right = inputSchemas[1] ?? [];
 
-    if (inputSchemas.length < 2) {
+    if (context?.inputVarCount !== undefined && context.inputVarCount < 2) {
       errors.push({ field: 'inputs', message: 'Connect both inputs' });
     }
 
-    if (axis === 1 && left.length > 0 && right.length > 0 && left.length !== right.length) {
+    const rowCounts = context?.inputRowCounts;
+    if (axis === 1 && rowCounts?.length === 2 && rowCounts[0] !== rowCounts[1]) {
       errors.push({
         field: 'axis',
         message: 'Row counts differ between inputs (column concat requires matching rows)',

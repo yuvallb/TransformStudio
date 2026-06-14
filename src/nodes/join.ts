@@ -1,5 +1,5 @@
 import { validateColumnsExist } from './column-utils';
-import type { NodeDefinition } from './types';
+import type { NodeDefinition, ValidateContext } from './types';
 
 type JoinHow = 'inner' | 'left' | 'right' | 'outer';
 
@@ -37,12 +37,16 @@ export const join: NodeDefinition = {
     };
   },
 
-  validate(config, inputSchemas) {
+  validate(config, inputSchemas, context?: ValidateContext) {
     const errors = [];
     const leftOn = typeof config.leftOn === 'string' ? config.leftOn.trim() : '';
     const rightOn = typeof config.rightOn === 'string' ? config.rightOn.trim() : '';
     const leftSchema = inputSchemas[0] ?? [];
     const rightSchema = inputSchemas[1] ?? [];
+
+    if (context?.inputVarCount !== undefined && context.inputVarCount < 2) {
+      errors.push({ field: 'inputs', message: 'Connect both inputs' });
+    }
 
     if (!leftOn) {
       errors.push({ field: 'leftOn', message: 'Left join key is required' });

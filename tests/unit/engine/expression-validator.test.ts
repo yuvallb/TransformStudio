@@ -15,6 +15,14 @@ describe('expression safety (sync pre-check)', () => {
     expect(isExpressionSafe("exec('x')")).toBe(false);
   });
 
+  it('rejects non-whitelisted function calls', () => {
+    expect(isExpressionSafe('foo()')).toBe(false);
+  });
+
+  it('allows whitelisted function calls', () => {
+    expect(isExpressionSafe('abs(revenue)')).toBe(true);
+  });
+
   it('allows simple comparisons', () => {
     expect(isExpressionSafe('revenue > 1000')).toBe(true);
   });

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 
@@ -20,6 +20,9 @@ export function ExpressionInput({
 }: ExpressionInputProps) {
   const [error, setError] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
+  const valueRef = useRef(value);
+
+  valueRef.current = value;
 
   const validate = useCallback(async (expr: string) => {
     if (!expr.trim()) {
@@ -44,7 +47,7 @@ export function ExpressionInput({
         height="72px"
         extensions={[python()]}
         onChange={(next) => onChange(next)}
-        onBlur={() => void validate(value)}
+        onBlur={() => void validate(valueRef.current)}
         placeholder={placeholder}
         basicSetup={{ lineNumbers: false, foldGutter: false }}
         className={cn(

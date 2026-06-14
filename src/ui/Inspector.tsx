@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
-import { getUpstreamSchemasForNode } from '@/engine/pipeline';
+import { getUpstreamSchemasForNode, getValidateContext } from '@/engine/pipeline';
 import { getNodeDefinition } from '@/nodes/registry';
 import type { InspectorField } from '@/nodes/types';
 import { useRuntimeStore } from '@/state/runtime-store';
@@ -36,8 +36,9 @@ export function Inspector() {
   const validationErrors = useMemo(() => {
     if (!selectedNode) return [];
     const def = getNodeDefinition(selectedNode.type);
-    return def.validate(selectedNode.config, upstreamSchemas);
-  }, [selectedNode, upstreamSchemas]);
+    const context = getValidateContext(selectedNode, workflow, byNodeId, def.inputs);
+    return def.validate(selectedNode.config, upstreamSchemas, context);
+  }, [selectedNode, upstreamSchemas, workflow, byNodeId]);
 
   const errorsByField = useMemo(() => {
     const map = new Map<string, string[]>();

@@ -12,6 +12,8 @@ const BLOCKED_PATTERNS = [
   /\bsys\./i,
 ];
 
+const WHITELISTED_CALLS = new Set(['abs', 'round', 'min', 'max']);
+
 export function translateExpression(expression: string): string {
   return expression.replace(/\{(\w+)\}/g, "params['$1']");
 }
@@ -21,7 +23,19 @@ export function normalizeExpression(expression: string, inputVar: string): strin
 }
 
 export function isExpressionSafe(expression: string): boolean {
-  return !BLOCKED_PATTERNS.some((pattern) => pattern.test(expression));
+  if (BLOCKED_PATTERNS.some((pattern) => pattern.test(expression))) {
+    return false;
+  }
+
+  const callPattern = /\b([a-zA-Z_]\w*)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = callPattern.exec(expression)) !== null) {
+    if (!WHITELISTED_CALLS.has(match[1]!)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function extractBracketColumns(expression: string): string[] {

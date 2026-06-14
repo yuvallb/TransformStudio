@@ -10,6 +10,13 @@ export interface ValidationError {
   message: string;
 }
 
+export interface ValidateContext {
+  /** Number of upstream inputs connected (from getInputVars). */
+  inputVarCount?: number;
+  /** Row counts per connected input, when all previews are available. */
+  inputRowCounts?: number[];
+}
+
 export type InspectorField =
   | { kind: 'text'; key: string; label: string }
   | { kind: 'number'; key: string; label: string }
@@ -40,6 +47,7 @@ export interface NodeDefinition {
   validate(
     config: Record<string, unknown>,
     inputSchemas: ColumnSchema[][],
+    context?: ValidateContext,
   ): ValidationError[];
 
   compile(
