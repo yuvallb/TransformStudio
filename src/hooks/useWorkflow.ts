@@ -10,6 +10,7 @@ import {
 import { saveWorkflow, getMostRecentWorkflow } from '@/data/workflow-repo';
 import { createSnapshot } from '@/versioning/snapshot';
 import { AUTO_SNAPSHOT_EDIT_COUNT, AUTOSAVE_DEBOUNCE_MS } from '@/lib/constants';
+import { useRuntimeStore } from '@/state/runtime-store';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
 
@@ -158,6 +159,7 @@ export function useWorkflow() {
 
 export async function restoreWorkflowFromStorage(): Promise<void> {
   const state = useWorkflowStore.getState();
+  useRuntimeStore.getState().reset();
 
   if (state.isHydrated) {
     const records = await loadDatasetsForWorkflow(state.workflow.id);

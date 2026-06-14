@@ -21,6 +21,7 @@ interface ColumnPickerProps {
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function ColumnPicker({
@@ -29,6 +30,7 @@ export function ColumnPicker({
   onChange,
   multiple = false,
   placeholder = 'Select column',
+  disabled = false,
 }: ColumnPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -70,6 +72,7 @@ export function ColumnPicker({
         type="button"
         variant="outline"
         className="h-8 w-full justify-between px-2 text-xs font-normal"
+        disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
       >
         <span className="truncate">{displayLabel}</span>

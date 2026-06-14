@@ -99,6 +99,23 @@ export function diffWorkflows(base: Workflow, target: Workflow): WorkflowDiff {
   };
 }
 
+export function diffWorkflowParams(base: Workflow, target: Workflow): ConfigFieldDiff[] {
+  const baseMap = new Map(base.params.map((p) => [p.name, p]));
+  const targetMap = new Map(target.params.map((p) => [p.name, p]));
+  const names = new Set([...baseMap.keys(), ...targetMap.keys()]);
+  const diffs: ConfigFieldDiff[] = [];
+
+  for (const name of [...names].sort()) {
+    const oldValue = baseMap.get(name);
+    const newValue = targetMap.get(name);
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      diffs.push({ field: name, oldValue, newValue });
+    }
+  }
+
+  return diffs;
+}
+
 export function getNodeDiffStatus(
   nodeId: string,
   diff: WorkflowDiff,

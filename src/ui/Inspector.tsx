@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { getUpstreamSchemasForNode, getValidateContext } from '@/engine/pipeline';
 import { getNodeDefinition } from '@/nodes/registry';
 import type { InspectorField } from '@/nodes/types';
+import { diffWorkflowParams } from '@/versioning/diff';
 import { useRuntimeStore } from '@/state/runtime-store';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
@@ -28,16 +29,22 @@ export function Inspector() {
   const compareMode = useUiStore((s) => s.compareMode);
 
   const selectedNode = workflow.nodes.find((n) => n.id === selectedNodeId);
+  const compareTargetWorkflow = compareMode?.targetWorkflow ?? workflow;
   const ghostNode =
     compareMode && selectedNodeId
       ? compareMode.baseWorkflow.nodes.find((n) => n.id === selectedNodeId)
       : null;
-  const displayNode = selectedNode ?? ghostNode;
+  const displayNode =
+    (compareMode ? compareTargetWorkflow.nodes.find((n) => n.id === selectedNodeId) : selectedNode) ??
+    ghostNode;
   const runtime = selectedNodeId ? byNodeId.get(selectedNodeId) : null;
 
   const upstreamSchemas = useMemo(
-    () => (displayNode ? getUpstreamSchemasForNode(displayNode, workflow, byNodeId) : []),
-    [displayNode, workflow, byNodeId],
+    () =>
+      displayNode
+        ? getUpstreamSchemasForNode(displayNode, compareTargetWorkflow, byNodeId)
+        : [],
+    [displayNode, compareTargetWorkflow, byNodeId],
   );
 
   const validationErrors = useMemo(() => {
@@ -90,6 +97,10 @@ export function Inspector() {
   const config = displayNode.config;
   const configDiffs =
     compareMode && selectedNodeId ? (compareMode.diff.configDiffs[selectedNodeId] ?? []) : [];
+  const paramsDiffs =
+    compareMode && compareMode.diff.paramsChanged
+      ? diffWorkflowParams(compareMode.baseWorkflow, compareMode.targetWorkflow)
+      : [];
   const isReadOnly = Boolean(compareMode);
 
   const update = (key: string, value: unknown) => {
@@ -108,6 +119,32 @@ export function Inspector() {
           </p>
         )}
       </div>
+
+      {compareMode && paramsDiffs.length > 0 && (
+        <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
+          <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
+            Parameter changes
+          </p>
+          <div className="space-y-2">
+            {paramsDiffs.map((diff) => (
+              <div key={diff.field} className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="font-medium text-muted-foreground">{diff.field} (before)</p>
+                  <pre className="mt-0.5 whitespace-pre-wrap break-all rounded bg-background/80 p-1.5">
+                    {JSON.stringify(diff.oldValue, null, 2)}
+                  </pre>
+                </div>
+                <div>
+                  <p className="font-medium text-muted-foreground">{diff.field} (after)</p>
+                  <pre className="mt-0.5 whitespace-pre-wrap break-all rounded bg-background/80 p-1.5">
+                    {JSON.stringify(diff.newValue, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {compareMode && configDiffs.length > 0 && (
         <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
@@ -164,7 +201,8 @@ export function Inspector() {
           upstreamSchemas={upstreamSchemas}
           errors={errorsByField.get(field.key) ?? []}
           onUpdate={update}
-          workflowParamNames={workflow.params.map((p) => p.name)}
+          workflowParamNames={compareTargetWorkflow.params.map((p) => p.name)}
+          readOnly={isReadOnly}
         />
       ))}
 
@@ -182,6 +220,7 @@ function InspectorFieldRenderer({
   errors,
   onUpdate,
   workflowParamNames,
+  readOnly = false,
 }: {
   field: InspectorField;
   config: Record<string, unknown>;
@@ -189,6 +228,7 @@ function InspectorFieldRenderer({
   errors: string[];
   onUpdate: (key: string, value: unknown) => void;
   workflowParamNames: string[];
+  readOnly?: boolean;
 }) {
   const schemaIndex = 'schemaIndex' in field ? (field.schemaIndex ?? 0) : 0;
   const schema = upstreamSchemas[schemaIndex] ?? [];
@@ -196,11 +236,12 @@ function InspectorFieldRenderer({
   const renderField = () => {
     switch (field.kind) {
       case 'text': {
-        const readOnly = field.key === 'filename';
+        const textReadOnly = readOnly || field.key === 'filename';
         return (
           <Input
             value={String(config[field.key] ?? '')}
-            readOnly={readOnly}
+            readOnly={textReadOnly}
+            disabled={readOnly && field.key !== 'filename'}
             onChange={(e) => onUpdate(field.key, e.target.value)}
             className="text-xs"
           />
@@ -211,6 +252,8 @@ function InspectorFieldRenderer({
           <Input
             type="number"
             value={String(config[field.key] ?? '')}
+            readOnly={readOnly}
+            disabled={readOnly}
             onChange={(e) => onUpdate(field.key, Number(e.target.value))}
             className="text-xs"
           />
@@ -224,7 +267,10 @@ function InspectorFieldRenderer({
               : 'false'
             : String(raw ?? field.options[0] ?? '');
         return (
-          <Select value={value} onValueChange={(v) => {
+          <Select
+            value={value}
+            disabled={readOnly}
+            onValueChange={(v) => {
             if (field.key === 'header') {
               onUpdate(field.key, v === 'true');
             } else if (field.key === 'axis') {
@@ -252,6 +298,7 @@ function InspectorFieldRenderer({
             columns={schema}
             value={typeof config[field.key] === 'string' ? (config[field.key] as string) : ''}
             onChange={(v) => onUpdate(field.key, v)}
+            disabled={readOnly}
           />
         );
       case 'columns':
@@ -261,6 +308,7 @@ function InspectorFieldRenderer({
             multiple
             value={Array.isArray(config[field.key]) ? (config[field.key] as string[]) : []}
             onChange={(v) => onUpdate(field.key, v)}
+            disabled={readOnly}
           />
         );
       case 'expression':
@@ -269,6 +317,7 @@ function InspectorFieldRenderer({
             value={String(config[field.key] ?? '')}
             onChange={(v) => onUpdate(field.key, v)}
             workflowParamNames={workflowParamNames}
+            readOnly={readOnly}
           />
         );
       case 'mapping':
@@ -281,6 +330,7 @@ function InspectorFieldRenderer({
             }
             columns={schema.map((c) => c.name)}
             onChange={(m) => onUpdate(field.key, m)}
+            readOnly={readOnly}
           />
         );
       case 'dtype-mapping':
@@ -293,6 +343,7 @@ function InspectorFieldRenderer({
             }
             columns={schema.map((c) => c.name)}
             onChange={(m) => onUpdate(field.key, m)}
+            readOnly={readOnly}
           />
         );
       case 'aggregations':
@@ -305,6 +356,7 @@ function InspectorFieldRenderer({
             }
             onChange={(aggs) => onUpdate('aggregations', aggs)}
             upstreamColumns={schema.map((c) => c.name)}
+            readOnly={readOnly}
           />
         );
       case 'param-ref':
@@ -335,10 +387,12 @@ function MappingEditor({
   mapping,
   columns,
   onChange,
+  readOnly = false,
 }: {
   mapping: Record<string, string>;
   columns: string[];
   onChange: (mapping: Record<string, string>) => void;
+  readOnly?: boolean;
 }) {
   const entries = Object.entries(mapping);
 
@@ -365,7 +419,7 @@ function MappingEditor({
     <div className="flex flex-col gap-2">
       {entries.map(([from, to], i) => (
         <div key={`${from}-${i}`} className="flex gap-1">
-          <Select value={from} onValueChange={(v) => updateEntry(i, v, to)}>
+          <Select value={from} disabled={readOnly} onValueChange={(v) => updateEntry(i, v, to)}>
             <SelectTrigger className="flex-1 text-xs">
               <SelectValue placeholder="Column" />
             </SelectTrigger>
@@ -379,10 +433,13 @@ function MappingEditor({
           </Select>
           <Input
             value={to}
+            readOnly={readOnly}
+            disabled={readOnly}
             onChange={(e) => updateEntry(i, from, e.target.value)}
             placeholder="New name"
             className="flex-1 text-xs"
           />
+          {!readOnly && (
           <button
             type="button"
             onClick={() => removeEntry(from)}
@@ -390,11 +447,14 @@ function MappingEditor({
           >
             ×
           </button>
+          )}
         </div>
       ))}
+      {!readOnly && (
       <button type="button" onClick={addEntry} className="text-xs text-primary hover:underline">
         + Add rename
       </button>
+      )}
     </div>
   );
 }
@@ -403,10 +463,12 @@ function DtypeMappingEditor({
   mapping,
   columns,
   onChange,
+  readOnly = false,
 }: {
   mapping: Record<string, string>;
   columns: string[];
   onChange: (mapping: Record<string, string>) => void;
+  readOnly?: boolean;
 }) {
   const entries = Object.entries(mapping);
 
@@ -433,7 +495,7 @@ function DtypeMappingEditor({
     <div className="flex flex-col gap-2">
       {entries.map(([col, dtype], i) => (
         <div key={`${col}-${i}`} className="flex gap-1">
-          <Select value={col} onValueChange={(v) => updateEntry(i, v, dtype)}>
+          <Select value={col} disabled={readOnly} onValueChange={(v) => updateEntry(i, v, dtype)}>
             <SelectTrigger className="flex-1 text-xs">
               <SelectValue placeholder="Column" />
             </SelectTrigger>
@@ -445,7 +507,7 @@ function DtypeMappingEditor({
               ))}
             </SelectContent>
           </Select>
-          <Select value={dtype} onValueChange={(v) => updateEntry(i, col, v)}>
+          <Select value={dtype} disabled={readOnly} onValueChange={(v) => updateEntry(i, col, v)}>
             <SelectTrigger className="w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -457,6 +519,7 @@ function DtypeMappingEditor({
               ))}
             </SelectContent>
           </Select>
+          {!readOnly && (
           <button
             type="button"
             onClick={() => removeEntry(col)}
@@ -464,11 +527,14 @@ function DtypeMappingEditor({
           >
             ×
           </button>
+          )}
         </div>
       ))}
+      {!readOnly && (
       <button type="button" onClick={addEntry} className="text-xs text-primary hover:underline">
         + Add cast
       </button>
+      )}
     </div>
   );
 }
@@ -477,10 +543,12 @@ function GroupByAggregations({
   aggregations,
   onChange,
   upstreamColumns,
+  readOnly = false,
 }: {
   aggregations: { column: string; func: string }[];
   onChange: (aggs: { column: string; func: string }[]) => void;
   upstreamColumns: string[];
+  readOnly?: boolean;
 }) {
   const updateAgg = (index: number, field: 'column' | 'func', value: string) => {
     const next = [...aggregations];
@@ -496,7 +564,7 @@ function GroupByAggregations({
     <div className="flex flex-col gap-2">
       {aggregations.map((agg, i) => (
         <div key={i} className="flex gap-2">
-          <Select value={agg.column} onValueChange={(v) => updateAgg(i, 'column', v)}>
+          <Select value={agg.column} disabled={readOnly} onValueChange={(v) => updateAgg(i, 'column', v)}>
             <SelectTrigger className="flex-1 text-xs">
               <SelectValue placeholder="Column" />
             </SelectTrigger>
@@ -508,7 +576,7 @@ function GroupByAggregations({
               ))}
             </SelectContent>
           </Select>
-          <Select value={agg.func} onValueChange={(v) => updateAgg(i, 'func', v)}>
+          <Select value={agg.func} disabled={readOnly} onValueChange={(v) => updateAgg(i, 'func', v)}>
             <SelectTrigger className="w-24 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -522,9 +590,11 @@ function GroupByAggregations({
           </Select>
         </div>
       ))}
+      {!readOnly && (
       <button type="button" onClick={addAgg} className="text-xs text-primary hover:underline">
         + Add aggregation
       </button>
+      )}
     </div>
   );
 }

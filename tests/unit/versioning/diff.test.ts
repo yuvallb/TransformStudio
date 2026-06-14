@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { diffWorkflows } from '@/versioning/diff';
+import { diffWorkflowParams, diffWorkflows } from '@/versioning/diff';
 import type { Workflow } from '@/lib/types';
 
 function workflow(overrides: Partial<Workflow> = {}): Workflow {
@@ -92,5 +92,22 @@ describe('diffWorkflows', () => {
 
     const diff = diffWorkflows(base, target);
     expect(diff.paramsChanged).toBe(true);
+  });
+
+  it('returns parameter-level diffs', () => {
+    const base = workflow({
+      params: [{ name: 'country', type: 'string', default: 'US' }],
+    });
+    const target = workflow({
+      params: [{ name: 'country', type: 'string', default: 'UK' }],
+    });
+
+    expect(diffWorkflowParams(base, target)).toEqual([
+      {
+        field: 'country',
+        oldValue: { name: 'country', type: 'string', default: 'US' },
+        newValue: { name: 'country', type: 'string', default: 'UK' },
+      },
+    ]);
   });
 });

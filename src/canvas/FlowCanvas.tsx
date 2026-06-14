@@ -56,7 +56,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
   const selectNode = useWorkflowStore((s) => s.selectNode);
 
   const nodes = useMemo(() => {
-    const flowNodes = toFlowNodes(workflow.nodes).map((n) => ({
+    const displayNodes = compareMode ? compareMode.targetWorkflow.nodes : workflow.nodes;
+    const flowNodes = toFlowNodes(displayNodes).map((n) => ({
       ...n,
       selected: n.id === selectedNodeId,
       draggable: !compareMode,
@@ -82,8 +83,38 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
     return flowNodes;
   }, [workflow.nodes, selectedNodeId, compareMode]);
   const edges = useMemo(() => {
-    const activeEdges = compareMode ? compareMode.targetWorkflow.edges : workflow.edges;
-    return toFlowEdges(activeEdges);
+    if (!compareMode) {
+      return toFlowEdges(workflow.edges);
+    }
+
+    const targetEdges = toFlowEdges(compareMode.targetWorkflow.edges);
+    const targetEdgeKeys = new Set(
+      compareMode.targetWorkflow.edges.map(
+        (e) => `${e.source}|${e.target}|${e.sourceHandle ?? ''}|${e.targetHandle ?? ''}`,
+      ),
+    );
+
+    const removedEdgeKeys = new Set(
+      compareMode.baseWorkflow.edges
+        .filter(
+          (e) =>
+            compareMode.diff.removed.includes(e.source) ||
+            compareMode.diff.removed.includes(e.target),
+        )
+        .map((e) => `${e.source}|${e.target}|${e.sourceHandle ?? ''}|${e.targetHandle ?? ''}`),
+    );
+
+    const ghostEdges = compareMode.baseWorkflow.edges
+      .filter((e) => {
+        const key = `${e.source}|${e.target}|${e.sourceHandle ?? ''}|${e.targetHandle ?? ''}`;
+        return removedEdgeKeys.has(key) && !targetEdgeKeys.has(key);
+      })
+      .map((e) => ({
+        ...toFlowEdges([e])[0]!,
+        style: { stroke: 'rgb(239 68 68)', strokeDasharray: '5 5' },
+      }));
+
+    return [...targetEdges, ...ghostEdges];
   }, [workflow.edges, compareMode]);
 
   const onNodesChange: OnNodesChange<Node<TransformNodeData>> = useCallback(

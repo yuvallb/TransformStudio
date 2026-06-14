@@ -13,6 +13,7 @@ interface ExpressionInputProps {
   placeholder?: string;
   className?: string;
   workflowParamNames?: string[];
+  readOnly?: boolean;
 }
 
 export function ExpressionInput({
@@ -21,6 +22,7 @@ export function ExpressionInput({
   placeholder = 'df["revenue"] > 1000',
   className,
   workflowParamNames = [],
+  readOnly = false,
 }: ExpressionInputProps) {
   const [error, setError] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
@@ -57,6 +59,8 @@ export function ExpressionInput({
         onChange={(next) => onChange(next)}
         onBlur={() => void validate(valueRef.current)}
         placeholder={placeholder}
+        readOnly={readOnly}
+        editable={!readOnly}
         basicSetup={{ lineNumbers: false, foldGutter: false }}
         className={cn(
           'overflow-hidden rounded-md border text-xs',
