@@ -1,6 +1,7 @@
 import * as Comlink from 'comlink';
 import { loadPyodide, version, type PyodideInterface } from 'pyodide';
 
+import { parsePythonException } from '@/engine/errors';
 import type {
   ExecutePipelineRequest,
   ExecutePipelineResult,
@@ -9,7 +10,6 @@ import type {
   LoadCsvResult,
   ProfileNodeResult,
   RunPythonResult,
-  StructuredError,
 } from '@/lib/types';
 
 import { executePipeline, profileNode } from './kernel';
@@ -17,22 +17,6 @@ import { getPythonHelpers } from './python/helpers';
 
 let pyodide: PyodideInterface | null = null;
 let initPromise: Promise<void> | null = null;
-
-function parsePythonException(err: unknown): StructuredError {
-  if (err && typeof err === 'object') {
-    const record = err as Record<string, unknown>;
-    const message =
-      typeof record.message === 'string'
-        ? record.message
-        : err instanceof Error
-          ? err.message
-          : String(err);
-    const traceback = typeof record.traceback === 'string' ? record.traceback : undefined;
-    return { message, traceback };
-  }
-
-  return { message: String(err) };
-}
 
 function toSerializable(value: unknown): unknown {
   if (value && typeof value === 'object' && 'toJs' in value) {
@@ -56,10 +40,9 @@ async function doInit(onProgress?: (stage: string) => void): Promise<void> {
   await pyodide.loadPackage(['pandas', 'numpy']);
 
   onProgress?.('Configuring pandas…');
-  pyodide.runPython(`
-import pandas as pd
-pd.options.mode.copy_on_write = True
-`);
+  // Pyodide 314 bundles pandas 2.x; CoW reduces memory churn on chained transforms.
+  // Copy-on-Write is enabled by default in Pyodide pandas >= 3
+  pyodide.runPython('import pandas as pd');
 
   pyodide.runPython(getPythonHelpers());
   onProgress?.('Ready');

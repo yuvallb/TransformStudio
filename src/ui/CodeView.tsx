@@ -25,6 +25,8 @@ export function CodeView() {
         <button
           type="button"
           onClick={() => setCodeViewMode('node')}
+          aria-label="Show node code"
+          aria-pressed={codeViewMode === 'node'}
           className={`rounded px-2 py-1 text-xs ${codeViewMode === 'node' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
           disabled={!selectedNodeId}
         >
@@ -33,6 +35,8 @@ export function CodeView() {
         <button
           type="button"
           onClick={() => setCodeViewMode('pipeline')}
+          aria-label="Show full pipeline code"
+          aria-pressed={codeViewMode === 'pipeline'}
           className={`rounded px-2 py-1 text-xs ${codeViewMode === 'pipeline' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
         >
           Full pipeline

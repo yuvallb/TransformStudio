@@ -18,6 +18,7 @@
 - Graph-level errors: banner with dismiss
 - Copy traceback button
 - Red node border + error icon (extend M2 styling)
+- Avoid infinite loops of errors popups
 
 ---
 
@@ -150,10 +151,11 @@ Ensure all E2E specs pass reliably in CI:
 | Spec | Coverage |
 |------|----------|
 | `pyodide-smoke.spec.ts` | Worker loads, no console errors |
-| `vertical-slice.spec.ts` | M2 full pipeline |
-| `sharing.spec.ts` | M8 URL round-trip |
+| `vertical-slice.spec.ts` | M2 full pipeline **including Output node** (CSV → Filter → GroupBy → Output) |
+| `sharing.spec.ts` | M8 URL round-trip (Flow C: share → new tab → restore → upload → run) |
 | `params.spec.ts` | M5 param dialog (if not merged into vertical slice) |
-| `versioning.spec.ts` | M6 revert flow |
+| `versioning.spec.ts` | M6 revert, reload, **fork**, and **compare** flows |
+| `notebook-export.spec.ts` (or extend export E2E) | M7 `.ipynb` download smoke test |
 
 - Add retries for flaky Pyodide load in CI (max 2)
 - Record video on failure (Playwright config)
@@ -168,6 +170,106 @@ Ensure all E2E specs pass reliably in CI:
 - Cache npm and Playwright browsers
 - Fail build on test failure (no deploy)
 - Optional: bundle size comment on PR (not required for DoD)
+
+---
+
+## Task 13: M1 Pyodide smoke UI (close M1 DoD gap)
+
+M1 DoD requires a UI-visible Pyodide smoke test. Integration coverage exists (`tests/integration/kernel.test.ts`) but there is no in-app trigger.
+
+### Implementation
+
+- Add a **Test Pyodide** action (footer dev control or Help → Diagnostics):
+  - Lazy-init kernel if needed
+  - Run `pd.DataFrame({"a": [1, 2, 3]})` and display `head()` result inline or in a toast/dialog
+- Show loading state during init; surface worker errors in UI
+- Gate behind `import.meta.env.DEV` **or** expose in production Help as a lightweight health check (pick one and document)
+
+### Acceptance
+
+- Clicking the control loads Pyodide, runs the DataFrame smoke, and shows the result without freezing the UI.
+
+---
+
+## Task 14: Schema migration & data-repo unit tests
+
+Static review found migration infrastructure without test coverage.
+
+### Implementation
+
+- Add `tests/unit/data/migrations.test.ts`:
+  - `migrateWorkflow()` round-trip at current `WORKFLOW_SCHEMA_VERSION`
+  - Future: wire `MIGRATIONS` map and test `v1-to-v2` when schema bumps
+- Add `tests/unit/data/version-repo.test.ts`:
+  - CRUD for version snapshots (create, list, get, delete)
+  - Fork/revert data integrity at repo layer
+
+### Acceptance
+
+- Both test files pass in `npm run test:unit`.
+
+---
+
+## Task 15: Architecture alignment & state boundaries
+
+Plan docs (`plan/01-architecture.md`) describe topo sort, fingerprint cache, and incremental recompute in the worker; implementation plans on the main thread. State also drifts: `workflow-store` holds `staleNodeIds`, `paramOverrides`, and `datasets` beyond the planned graph/params/selection split.
+
+### Implementation
+
+- **Document or refactor** execution ownership:
+  - Option A (preferred for launch): update `plan/01-architecture.md` to reflect main-thread pipeline planning + worker snippet execution
+  - Option B: move orchestration into worker (larger refactor — only if explicitly chosen)
+- **Tighten Zustand boundaries:**
+  - Move `staleNodeIds` (and transient `paramOverrides`) to `runtime-store` or a dedicated execution slice
+  - Keep `datasets` documented as intentional non-persisted workflow-store concern, or extract to a `datasets-store`
+- Move dialog open state (`paramDialogOpen`, `shareOpen`, `exportOpen`, `versionOpen`) from `Header.tsx` local state to `ui-store` for consistency
+
+### Acceptance
+
+- Plan docs match implementation OR refactor is complete.
+- Store ownership documented in `AGENTS.md` state table.
+- No regressions in autosave, execution debounce, or param dialog flow.
+
+---
+
+## Task 16: Code hygiene & defensive hardening
+
+Minor gaps from static review — low effort, reduces tech debt before launch.
+
+### Implementation
+
+| Item | Action |
+|------|--------|
+| Unused `lodash` dependency | Remove from `package.json` if still unused |
+| `parsePythonException` duplication | Consolidate to `src/engine/errors.ts` (or `src/lib/`) — single helper used by worker + kernel-client |
+| `nodeRegistry` typing | Change `Partial<Record<…>>` → `Record<NodeType, NodeDefinition>` for compile-time completeness |
+| `SAFE_NODE_ID_PATTERN` | Either enforce in `validateShareablePayload` / kernel paths or remove unused export |
+| `PreviewGrid` preview cap | Defensively slice rows to `PREVIEW_ROW_CAP` in UI (don't rely solely on worker cap) |
+| Pandas CoW deprecation warning | Remove explicit `pd.options.mode.copy_on_write = True` if Pyodide pandas ≥ 3 always enables CoW; document in worker comment |
+| `runPython()` public hook | Restrict to dev/test bridge or remove from `usePyodide` public API |
+| `validateConnection()` in codegen | Move graph-validation helper to `src/engine/graph-validation.ts` or `src/canvas/` |
+
+### Acceptance
+
+- `npm run lint && npm run typecheck && npm run test:unit` pass after cleanup.
+- No new `any` or eslint suppressions introduced.
+
+---
+
+## Task 17: M4 Concat multi-input (stretch)
+
+Plan lists Concat as "2+" inputs; implementation supports exactly two handles.
+
+### Implementation
+
+- Extend `concat` node to accept N ≥ 2 inputs (dynamic input ports or "Add input" in inspector)
+- Update `NodeRenderer` handles, topo-sort input vars, and unit tests
+
+### Acceptance
+
+- Concat with 3+ upstream datasets works in isolation and in a demo workflow.
+
+*Stretch goal — not required for M9 DoD unless time permits.*
 
 ---
 
@@ -190,6 +292,8 @@ Per [`plan/UX-guidelines.md`](../plan/UX-guidelines.md):
 | Layer | What to test | File |
 |-------|--------------|------|
 | Unit | Undo/redo stack (if implemented) | `tests/unit/state/undo.test.ts` |
+| Unit | Workflow schema migrations | `tests/unit/data/migrations.test.ts` |
+| Unit | Version repo CRUD | `tests/unit/data/version-repo.test.ts` |
 | Unit | All existing unit tests still pass | full suite |
 | Integration | Memory cleanup on node delete | `tests/integration/memory.test.ts` |
 | E2E | Full suite green | `tests/e2e/*.spec.ts` |
@@ -210,7 +314,10 @@ Per [`plan/UX-guidelines.md`](../plan/UX-guidelines.md):
 ### Definition of Done
 
 - [ ] 50 MB CSV loads and transforms without UI freeze (pan/zoom works during execution).
-- [ ] All E2E tests pass in CI on every push to main.
+- [ ] All E2E tests pass in CI on every push to main (sharing, pyodide smoke, notebook export, fork/compare).
+- [ ] M1 Pyodide smoke UI available (Task 13).
+- [ ] Migration and version-repo unit tests added (Task 14).
+- [ ] Architecture/state boundary alignment documented or implemented (Task 15).
 - [ ] Demo workflows runnable from landing/empty state without manual setup.
 - [ ] README updated with live GitHub Pages link and usage guide.
 - [ ] Expandable Python tracebacks available per failed node.

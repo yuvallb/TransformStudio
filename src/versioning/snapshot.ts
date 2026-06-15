@@ -8,12 +8,21 @@ function cloneWorkflow(workflow: Workflow): Workflow {
   return structuredClone(workflow);
 }
 
+function nextCreatedAt(latestCreatedAt: string | null): string {
+  const now = new Date().toISOString();
+  if (!latestCreatedAt || latestCreatedAt < now) {
+    return now;
+  }
+  return new Date(new Date(latestCreatedAt).getTime() + 1).toISOString();
+}
+
 export async function createSnapshot(
   workflow: Workflow,
   message: string,
   parentId: string | null = null,
 ): Promise<VersionSnapshot> {
-  const resolvedParent = parentId ?? (await getLatestVersion(workflow.id))?.id ?? null;
+  const latest = await getLatestVersion(workflow.id);
+  const resolvedParent = parentId ?? latest?.id ?? null;
 
   const snapshot: VersionSnapshot = {
     id: createId(),
@@ -21,7 +30,7 @@ export async function createSnapshot(
     parentId: resolvedParent,
     message,
     workflow: cloneWorkflow(workflow),
-    createdAt: new Date().toISOString(),
+    createdAt: nextCreatedAt(latest?.createdAt ?? null),
   };
 
   await createVersion(snapshot);

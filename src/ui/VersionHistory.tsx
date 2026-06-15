@@ -255,7 +255,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2"
-                        title="Revert"
+                        aria-label={`Revert to ${version.message}`}
                         onClick={() => void handleRevert(version.id)}
                       >
                         <RotateCcw className="size-3.5" />
@@ -264,7 +264,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2"
-                        title="Fork"
+                        aria-label={`Fork from ${version.message}`}
                         onClick={() => void handleFork(version.id)}
                       >
                         <GitBranch className="size-3.5" />
@@ -273,7 +273,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2"
-                        title="Compare with current"
+                        aria-label={`Compare ${version.message} with current`}
                         onClick={() => void handleCompare(version.id)}
                       >
                         <GitCompare className="size-3.5" />
@@ -282,7 +282,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
                         size="sm"
                         variant="ghost"
                         className="h-7 px-2 text-xs"
-                        title="Compare with another version"
+                        aria-label={`Compare ${version.message} with another version`}
                         onClick={() =>
                           setCompareBaseId(compareBaseId === version.id ? null : version.id)
                         }

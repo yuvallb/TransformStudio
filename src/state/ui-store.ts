@@ -19,18 +19,28 @@ interface UiState {
   rightPanelTab: 'inspector' | 'profile' | 'code';
   highlightedColumn: string | null;
   saveStatus: SaveStatus;
-  versionPanelOpen: boolean;
   compareMode: CompareMode | null;
   isSharedImport: boolean;
+  paramDialogOpen: boolean;
+  exportDialogOpen: boolean;
+  shareDialogOpen: boolean;
+  versionDialogOpen: boolean;
+  versionOpenSaveOnMount: boolean;
+  helpDialogOpen: boolean;
 
   setBottomPanelOpen: (open: boolean) => void;
   setCodeViewMode: (mode: CodeViewMode) => void;
   setRightPanelTab: (tab: 'inspector' | 'profile' | 'code') => void;
   setHighlightedColumn: (column: string | null) => void;
   setSaveStatus: (status: SaveStatus) => void;
-  setVersionPanelOpen: (open: boolean) => void;
   setCompareMode: (mode: CompareMode | null) => void;
   setSharedImport: (shared: boolean) => void;
+  setParamDialogOpen: (open: boolean) => void;
+  setExportDialogOpen: (open: boolean) => void;
+  setShareDialogOpen: (open: boolean) => void;
+  setVersionDialogOpen: (open: boolean) => void;
+  setVersionOpenSaveOnMount: (open: boolean) => void;
+  setHelpDialogOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -39,9 +49,14 @@ export const useUiStore = create<UiState>((set) => ({
   rightPanelTab: 'inspector',
   highlightedColumn: null,
   saveStatus: 'idle',
-  versionPanelOpen: false,
   compareMode: null,
   isSharedImport: false,
+  paramDialogOpen: false,
+  exportDialogOpen: false,
+  shareDialogOpen: false,
+  versionDialogOpen: false,
+  versionOpenSaveOnMount: false,
+  helpDialogOpen: false,
 
   setBottomPanelOpen(open) {
     set({ bottomPanelOpen: open });
@@ -63,15 +78,35 @@ export const useUiStore = create<UiState>((set) => ({
     set({ saveStatus: status });
   },
 
-  setVersionPanelOpen(open) {
-    set({ versionPanelOpen: open });
-  },
-
   setCompareMode(mode) {
     set({ compareMode: mode });
   },
 
   setSharedImport(shared) {
     set({ isSharedImport: shared });
+  },
+
+  setParamDialogOpen(open) {
+    set({ paramDialogOpen: open });
+  },
+
+  setExportDialogOpen(open) {
+    set({ exportDialogOpen: open });
+  },
+
+  setShareDialogOpen(open) {
+    set({ shareDialogOpen: open });
+  },
+
+  setVersionDialogOpen(open) {
+    set({ versionDialogOpen: open });
+  },
+
+  setVersionOpenSaveOnMount(open) {
+    set({ versionOpenSaveOnMount: open });
+  },
+
+  setHelpDialogOpen(open) {
+    set({ helpDialogOpen: open });
   },
 }));

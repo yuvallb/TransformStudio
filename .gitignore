@@ -194,3 +194,4 @@ dist/
 
 # Vitest
 coverage/
+.DS_Store

@@ -78,6 +78,21 @@ describe('groupby', () => {
   it('validates missing group columns', () => {
     expect(groupby.validate({ groupColumns: [], aggregations: [] }, [[]])).not.toHaveLength(0);
   });
+
+  it('uses named aggregation when grouping and aggregating the same column', () => {
+    const code = groupby.compile(
+      {
+        groupColumns: ['customer_id'],
+        aggregations: [{ column: 'customer_id', func: 'count' }],
+      },
+      ['node_a'],
+      'node_b',
+      {},
+    );
+    expect(code).toBe(
+      'node_b = node_a.groupby(["customer_id"]).agg(customer_id_count=("customer_id", "count")).reset_index()',
+    );
+  });
 });
 
 describe('output', () => {

@@ -153,6 +153,7 @@ export interface NodeRuntimeState {
   preview: PreviewPayload | null;
   profile: ColumnProfile[] | null;
   error: string | null;
+  traceback: string | null;
 }
 
 export interface NodeDataset {

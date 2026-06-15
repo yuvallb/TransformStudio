@@ -76,12 +76,36 @@ export const groupby: NodeDefinition = {
     const groupColumns = parseGroupColumns(config);
     const aggregations = parseAggregations(config);
     const input = inputVars[0];
+    const groupSet = new Set(groupColumns);
     const groupList = groupColumns.map((c) => JSON.stringify(c)).join(', ');
-    const aggEntries = aggregations
-      .map((a) => `${JSON.stringify(a.column)}: ${JSON.stringify(a.func)}`)
-      .join(', ');
 
-    return `${outputVar} = ${input}.groupby([${groupList}]).agg({${aggEntries}}).reset_index()`;
+    const dictEntries: string[] = [];
+    const namedEntries: string[] = [];
+    const reservedNames = new Set(groupColumns);
+
+    for (const agg of aggregations) {
+      if (groupSet.has(agg.column)) {
+        let outName = `${agg.column}_${agg.func}`;
+        let suffix = 2;
+        while (reservedNames.has(outName)) {
+          outName = `${agg.column}_${agg.func}_${suffix}`;
+          suffix += 1;
+        }
+        reservedNames.add(outName);
+        namedEntries.push(
+          `${outName}=(${JSON.stringify(agg.column)}, ${JSON.stringify(agg.func)})`,
+        );
+      } else {
+        dictEntries.push(`${JSON.stringify(agg.column)}: ${JSON.stringify(agg.func)}`);
+      }
+    }
+
+    const aggArgs = [
+      ...(dictEntries.length > 0 ? [`{${dictEntries.join(', ')}}`] : []),
+      ...namedEntries,
+    ].join(', ');
+
+    return `${outputVar} = ${input}.groupby([${groupList}]).agg(${aggArgs}).reset_index()`;
   },
 
   inspectorSchema() {

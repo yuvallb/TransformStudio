@@ -116,6 +116,12 @@ function validateShareablePayload(parsed: unknown): ShareableWorkflow {
     if (!node || typeof node !== 'object') {
       throw new Error('Invalid workflow file: malformed node entry');
     }
+    const nodeId = (node as { id?: unknown }).id;
+    if (typeof nodeId !== 'string' || !SAFE_NODE_ID_PATTERN.test(nodeId)) {
+      throw new Error(
+        `Invalid workflow file: node id "${String(nodeId)}" must match ${SAFE_NODE_ID_PATTERN}`,
+      );
+    }
     const nodeType = (node as { type?: unknown }).type;
     if (typeof nodeType !== 'string' || !isKnownNodeType(nodeType)) {
       throw new Error(`Invalid workflow file: unknown node type "${String(nodeType)}"`);

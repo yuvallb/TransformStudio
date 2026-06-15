@@ -1,4 +1,5 @@
 export const PREVIEW_ROW_CAP = 100;
+export const LARGE_FILE_WARN_BYTES = 50 * 1024 * 1024;
 /** Max decompressed share payload size when decoding URL hash (gzip bomb guard). */
 export const SHARE_DECODE_MAX_BYTES = 512 * 1024;
 /** Max base64url-encoded gzip payload length accepted on decode. */

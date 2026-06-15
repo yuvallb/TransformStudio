@@ -76,6 +76,7 @@ export function NodePalette() {
                     key={node.type}
                     type="button"
                     draggable
+                    aria-label={`Add ${node.label} node`}
                     onDragStart={(e) => onDragStart(e, node.type)}
                     onClick={() => onAddClick(node.type)}
                     className="flex cursor-grab items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing"

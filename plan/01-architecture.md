@@ -17,6 +17,7 @@ flowchart TB
     Preview["Preview Grid + Profiler"]
     CodeView["Code View / Export"]
     Store["Zustand store (graph, selection, params)"]
+    Engine["Execution engine\n(topo sort, fingerprints, codegen)"]
   end
 
   subgraph Persist["Browser storage"]
@@ -25,18 +26,19 @@ flowchart TB
   end
 
   subgraph Worker["Web Worker"]
-    Kernel["Execution Kernel\n(topo sort, cache, incremental)"]
+    Kernel["Snippet executor\n(run Python, preview, profile)"]
     Pyodide["Pyodide (pandas / numpy)"]
   end
 
   Canvas <--> Store
   Inspector <--> Store
-  Store -- "compile + run request" --> Kernel
+  Store <--> Engine
+  Engine -- "compiled snippets + stale node list" --> Kernel
   Kernel <--> Pyodide
   Kernel -- "preview JSON / profile / errors" --> Preview
   Store <--> IDB
   Store <--> URL
-  CodeView <-- "generated code" --- Store
+  CodeView <-- "generated code" --- Engine
 ```
 
 ## Thread model
@@ -45,15 +47,16 @@ flowchart TB
 
 - Renders the DAG canvas, node inspector, preview grid, profiler, and code view.
 - Holds the **serializable workflow graph** in Zustand.
-- Sends run requests to the worker; receives lightweight preview/profile payloads.
+- **Plans pipeline execution** on the main thread: topological sort, content fingerprints, incremental stale-node selection, and per-node Python codegen (`src/engine/`).
+- Sends compiled snippets and eviction requests to the worker; receives lightweight preview/profile payloads.
 - Never holds full DataFrames.
 
 ### Web Worker (Pyodide kernel)
 
 - Loads and initializes Pyodide (lazy, on first use).
 - Maintains a Python namespace keyed by node ID (`node_<id>` → DataFrame).
-- Topologically sorts the DAG, compiles node configs to Python snippets, executes them.
-- Caches results via content fingerprints; invalidates downstream on edit.
+- **Executes pre-compiled Python snippets** sent by the main thread (does not topo-sort or codegen).
+- Evicts deleted node vars (`del node_<id>` + `gc.collect()`) when told via `deleteNodeIds`.
 - Returns only small JSON previews and profile stats across the worker boundary.
 
 **Why a worker is non-negotiable:** Pyodide is ~6–10 MB and Python execution is CPU-heavy. Running on the main thread would freeze pan/zoom/selection on the canvas.
@@ -77,11 +80,11 @@ flowchart TB
 ### Transform
 
 1. User edits a node config or adds/removes an edge.
-2. Store marks the affected node + all downstream nodes as stale.
-3. Store sends a partial recompute request to the worker.
-4. Worker re-executes only stale nodes (incremental).
+2. Store marks the affected node + all downstream nodes as stale (`staleNodeIds` in workflow-store).
+3. Main-thread engine builds a partial recompute request: topo-sorted stale nodes, compiled Python snippets, fingerprints.
+4. Worker executes only the sent snippets; evicts vars for deleted nodes when `deleteNodeIds` is set.
 5. Worker emits updated previews per node.
-6. Main thread updates the preview grid and code view.
+6. Main thread updates runtime-store previews and the code view.
 
 ### Share
 

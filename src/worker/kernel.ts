@@ -1,30 +1,14 @@
 import type { PyodideInterface } from 'pyodide';
 
+import { parsePythonException } from '@/engine/errors';
 import type {
   ExecutePipelineRequest,
   ExecutePipelineResult,
   ColumnProfile,
   NodeRuntimeState,
   PreviewPayload,
-  StructuredError,
 } from '@/lib/types';
 import { normalizePreviewColumns } from '@/lib/utils';
-
-function parsePythonException(err: unknown, nodeId?: string): StructuredError {
-  if (err && typeof err === 'object') {
-    const record = err as Record<string, unknown>;
-    const message =
-      typeof record.message === 'string'
-        ? record.message
-        : err instanceof Error
-          ? err.message
-          : String(err);
-    const traceback = typeof record.traceback === 'string' ? record.traceback : undefined;
-    return { message, traceback, nodeId };
-  }
-
-  return { message: String(err), nodeId };
-}
 
 function toPreviewPayload(raw: unknown): PreviewPayload | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -153,17 +137,20 @@ gc.collect()
         preview,
         profile,
         error: null,
+        traceback: null,
       };
     } catch (err) {
+      const parsed = parsePythonException(err, node.nodeId);
       nodeResults[node.nodeId] = {
         nodeId: node.nodeId,
         status: 'error',
         fingerprint: null,
         preview: null,
         profile: null,
-        error: parsePythonException(err, node.nodeId).message,
+        error: parsed.message,
+        traceback: parsed.traceback ?? null,
       };
-      return { nodeResults, error: parsePythonException(err, node.nodeId) };
+      return { nodeResults, error: parsed };
     }
   }
 

@@ -1,5 +1,6 @@
 import * as Comlink from 'comlink';
 
+import { parsePythonException } from '@/engine/errors';
 import type {
   ExecutePipelineRequest,
   ExecutePipelineResult,
@@ -9,29 +10,12 @@ import type {
   LoadCsvResult,
   ProfileNodeResult,
   RunPythonResult,
-  StructuredError,
 } from '@/lib/types';
 
 import type { KernelApi } from '@/worker/pyodide.worker';
 
 const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 30000;
-
-export function parsePythonError(err: unknown): StructuredError {
-  if (err && typeof err === 'object') {
-    const record = err as Record<string, unknown>;
-    const message =
-      typeof record.message === 'string'
-        ? record.message
-        : err instanceof Error
-          ? err.message
-          : String(err);
-    const traceback = typeof record.traceback === 'string' ? record.traceback : undefined;
-    return { message, traceback };
-  }
-
-  return { message: String(err) };
-}
 
 type StatusListener = (status: KernelStatus) => void;
 type ProgressListener = (stage: string) => void;
@@ -213,7 +197,7 @@ export class KernelClient {
     const result = await this.api.runPython(code);
 
     if (result.error) {
-      return { error: parsePythonError(result.error) };
+      return { error: parsePythonException(result.error) };
     }
 
     return result;
@@ -229,7 +213,7 @@ export class KernelClient {
     const result = await this.api.loadCsv(bytes, options ?? {});
 
     if (result.error) {
-      return { error: parsePythonError(result.error) };
+      return { error: parsePythonException(result.error) };
     }
 
     return result;
@@ -255,7 +239,7 @@ export class KernelClient {
     if (result.error) {
       return {
         nodeResults: result.nodeResults,
-        error: parsePythonError(result.error),
+        error: parsePythonException(result.error),
       };
     }
 
@@ -272,7 +256,7 @@ export class KernelClient {
     const result = await this.api.profileNode(nodeId);
 
     if (result.error) {
-      return { error: parsePythonError(result.error) };
+      return { error: parsePythonException(result.error) };
     }
 
     return result;

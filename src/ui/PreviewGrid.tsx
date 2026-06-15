@@ -22,6 +22,7 @@ function formatCell(value: unknown): string {
 export function PreviewGrid() {
   const selectedNodeId = useWorkflowStore((s) => s.selectedNodeId);
   const highlightedColumn = useUiStore((s) => s.highlightedColumn);
+  const isRunning = useRuntimeStore((s) => s.isRunning);
   const preview = useRuntimeStore((s) =>
     selectedNodeId ? (s.byNodeId.get(selectedNodeId)?.preview ?? null) : null,
   );
@@ -42,6 +43,8 @@ export function PreviewGrid() {
       };
     }
 
+    const rows = preview.rows.slice(0, PREVIEW_ROW_CAP);
+
     const gridColumns: GridColumn[] = preview.columns.map((col) => ({
       title: col.name,
       id: col.name,
@@ -61,7 +64,7 @@ export function PreviewGrid() {
                 x: highlightedIndex,
                 y: 0,
                 width: 1,
-                height: preview.rows.length,
+                height: rows.length,
               },
               style: 'solid',
             },
@@ -81,7 +84,7 @@ export function PreviewGrid() {
     const getCellContent = (cell: readonly [number, number]): GridCell => {
       const [col, row] = cell;
       const columnName = preview.columns[col]?.name;
-      const value = columnName ? preview.rows[row]?.[columnName] : '';
+      const value = columnName ? rows[row]?.[columnName] : '';
       const text = formatCell(value);
 
       return {
@@ -95,7 +98,7 @@ export function PreviewGrid() {
     return {
       columns: gridColumns,
       getCellContent,
-      rowCount: preview.rows.length,
+      rowCount: rows.length,
       highlightRegions: highlights,
     };
   }, [preview, highlightedColumn]);
@@ -106,6 +109,10 @@ export function PreviewGrid() {
         Select a node to preview its output
       </div>
     );
+  }
+
+  if (isRunning && !preview) {
+    return <PreviewGridSkeleton />;
   }
 
   if (!preview || preview.rows.length === 0) {
@@ -127,7 +134,7 @@ export function PreviewGrid() {
           <span className="ml-2 text-primary">· Highlighting {highlightedColumn}</span>
         )}
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" aria-label="Data preview grid">
         <DataEditor
           columns={columns}
           rows={rowCount}
@@ -150,5 +157,22 @@ export function useSelectedPreview(): PreviewPayload | null {
   const selectedNodeId = useWorkflowStore((s) => s.selectedNodeId);
   return useRuntimeStore((s) =>
     selectedNodeId ? (s.byNodeId.get(selectedNodeId)?.preview ?? null) : null,
+  );
+}
+
+function PreviewGridSkeleton() {
+  return (
+    <div className="flex h-full flex-col p-4" aria-busy="true" aria-label="Loading preview">
+      <div className="mb-3 h-3 w-32 animate-pulse rounded bg-muted" />
+      <div className="flex flex-1 flex-col gap-2">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div
+            key={i}
+            className="h-6 animate-pulse rounded bg-muted"
+            style={{ width: `${60 + (i % 3) * 15}%` }}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
