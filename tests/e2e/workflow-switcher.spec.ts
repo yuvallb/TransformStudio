@@ -39,9 +39,9 @@ test('Open menu → Demo loads and runs', async ({ page }) => {
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
-  await expect(
-    page.locator('[data-testid="rf__node-demo-out"]').locator('.text-emerald-500').first(),
-  ).toBeVisible({ timeout: 180000 });
+  const outputNode = page.locator('.react-flow__node').filter({ hasText: 'Output' });
+  await expect(outputNode).toContainText('4 rows × 2 cols', { timeout: 180000 });
+  await expect(outputNode.locator('.text-emerald-500').first()).toBeVisible({ timeout: 30000 });
 });
 
 test('Open menu → Recent shows saved workflow', async ({ page }) => {
@@ -60,7 +60,7 @@ test('Open menu → Recent shows saved workflow', async ({ page }) => {
   await expect(page.locator('.react-flow__node')).toHaveCount(5, { timeout: 10000 });
 
   await page.getByTestId('workflow-switcher-trigger').click();
-  const salesRecent = page.getByRole('menuitem', { name: /Sales Analysis/i });
+  const salesRecent = page.locator('[data-testid^="recent-item-"]').filter({ hasText: 'Sales Analysis' });
   await expect(salesRecent).toBeVisible({ timeout: 10000 });
   await salesRecent.click();
 
