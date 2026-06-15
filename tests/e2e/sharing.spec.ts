@@ -13,6 +13,7 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   const sourcePage = await sourceContext.newPage();
 
   await sourcePage.goto('./');
+  await expect(sourcePage.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   await sourcePage.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(sourcePage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });

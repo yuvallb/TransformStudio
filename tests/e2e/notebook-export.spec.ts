@@ -8,6 +8,7 @@ test('Flow E: export pipeline as Jupyter notebook', async ({ page }) => {
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
