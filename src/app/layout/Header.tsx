@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { History, Play, Share2, Download, FilePlus, GitCompare } from 'lucide-react';
 
 import { useExecution } from '@/hooks/useExecution';
@@ -7,6 +6,7 @@ import { ExportDialog } from '@/ui/ExportDialog';
 import { ParamDialog } from '@/ui/ParamDialog';
 import { ShareDialog } from '@/ui/ShareDialog';
 import { VersionHistory } from '@/ui/VersionHistory';
+import { useRuntimeStore } from '@/state/runtime-store';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
 
@@ -14,15 +14,21 @@ export function Header() {
   const workflow = useWorkflowStore((s) => s.workflow);
   const paramCount = workflow.params.length;
   const { runPipeline } = useExecution();
-  const [paramDialogOpen, setParamDialogOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
+  const isRunning = useRuntimeStore((s) => s.isRunning);
 
   const saveStatus = useUiStore((s) => s.saveStatus);
-  const [versionOpen, setVersionOpen] = useState(false);
-  const [openSaveOnMount, setOpenSaveOnMount] = useState(false);
   const compareMode = useUiStore((s) => s.compareMode);
   const setCompareMode = useUiStore((s) => s.setCompareMode);
+  const paramDialogOpen = useUiStore((s) => s.paramDialogOpen);
+  const setParamDialogOpen = useUiStore((s) => s.setParamDialogOpen);
+  const exportDialogOpen = useUiStore((s) => s.exportDialogOpen);
+  const setExportDialogOpen = useUiStore((s) => s.setExportDialogOpen);
+  const shareDialogOpen = useUiStore((s) => s.shareDialogOpen);
+  const setShareDialogOpen = useUiStore((s) => s.setShareDialogOpen);
+  const versionDialogOpen = useUiStore((s) => s.versionDialogOpen);
+  const setVersionDialogOpen = useUiStore((s) => s.setVersionDialogOpen);
+  const versionOpenSaveOnMount = useUiStore((s) => s.versionOpenSaveOnMount);
+  const setVersionOpenSaveOnMount = useUiStore((s) => s.setVersionOpenSaveOnMount);
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : null;
@@ -67,8 +73,8 @@ export function Header() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setOpenSaveOnMount(false);
-              setVersionOpen(true);
+              setVersionOpenSaveOnMount(false);
+              setVersionDialogOpen(true);
             }}
             aria-label="Version history"
           >
@@ -79,8 +85,8 @@ export function Header() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setOpenSaveOnMount(true);
-              setVersionOpen(true);
+              setVersionOpenSaveOnMount(true);
+              setVersionDialogOpen(true);
             }}
             aria-label="Save version"
           >
@@ -101,14 +107,21 @@ export function Header() {
               </span>
             )}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} aria-label="Share workflow">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShareDialogOpen(true)}
+            disabled={isRunning}
+            aria-label="Share workflow"
+          >
             <Share2 className="size-4" />
             Share
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setExportOpen(true)}
+            onClick={() => setExportDialogOpen(true)}
+            disabled={isRunning}
             aria-label="Export code"
           >
             <Download className="size-4" />
@@ -117,8 +130,8 @@ export function Header() {
         </div>
       </header>
 
-      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
-      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
+      <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+      <ShareDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen} />
 
       <ParamDialog
         open={paramDialogOpen}
@@ -130,12 +143,12 @@ export function Header() {
       />
 
       <VersionHistory
-        open={versionOpen}
+        open={versionDialogOpen}
         onOpenChange={(open) => {
-          setVersionOpen(open);
-          if (!open) setOpenSaveOnMount(false);
+          setVersionDialogOpen(open);
+          if (!open) setVersionOpenSaveOnMount(false);
         }}
-        openSaveOnMount={openSaveOnMount}
+        openSaveOnMount={versionOpenSaveOnMount}
       />
     </>
   );

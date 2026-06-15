@@ -1,9 +1,12 @@
 import { useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
 import { FlowCanvas } from '@/canvas/FlowCanvas';
 import { detectDelimiter } from '@/lib/delimiter';
+import { LARGE_FILE_WARN_BYTES } from '@/lib/constants';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
+import { DemoPicker } from '@/ui/DemoPicker';
 
 function isCsvFile(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -32,6 +35,10 @@ export function FileDropzone() {
       const isCsv = isCsvFile(file);
       const isJson = isJsonFile(file);
       if (!isCsv && !isJson) return;
+
+      if (file.size > LARGE_FILE_WARN_BYTES) {
+        toast.warning('Large file — processing may be slow');
+      }
 
       const buffer = await file.arrayBuffer();
       const data = new Uint8Array(buffer);
@@ -94,6 +101,7 @@ export function FileDropzone() {
         onChange={handleFileInput}
       />
       <FlowCanvas onDropFile={handleDropFile} />
+      <DemoPicker />
       <div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center">
         <p className="rounded-md border border-dashed border-border bg-card/80 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
           Drop a CSV or JSON file here or drag nodes from the palette

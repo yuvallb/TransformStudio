@@ -82,8 +82,10 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
 
   await page.getByRole('button', { name: 'Filter', exact: true }).click();
   await page.getByRole('button', { name: 'GroupBy', exact: true }).click();
+  await page.getByRole('button', { name: 'Output', exact: true }).click();
 
-  await expect(page.locator('.react-flow__node')).toHaveCount(3, { timeout: 10000 });
+  await expect(page.locator('.react-flow__node')).toHaveCount(4, { timeout: 10000 });
+  await expect(page.locator('.react-flow__node').filter({ hasText: 'Output' })).toBeVisible();
 
   await page.evaluate(() => {
     const bridge = window.__transformStudioTest;
@@ -91,8 +93,10 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
     const source = ids.find((id) => document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('CSV Source'));
     const filter = ids.find((id) => document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('Filter'));
     const group = ids.find((id) => document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('GroupBy'));
+    const output = ids.find((id) => document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('Output'));
     if (source && filter) bridge?.connectNodes(source, filter);
     if (filter && group) bridge?.connectNodes(filter, group);
+    if (group && output) bridge?.connectNodes(group, output);
   });
 
   const filterNode = page.locator('.react-flow__node').filter({ hasText: 'Filter' }).first();

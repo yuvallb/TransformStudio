@@ -1,4 +1,5 @@
 import { FileCode, Notebook } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { downloadNotebook } from '@/export/notebook';
 import { downloadPythonScript } from '@/export/python-script';
@@ -22,11 +23,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   const handlePythonExport = () => {
     downloadPythonScript(workflow);
+    toast.success('Python script downloaded');
     onOpenChange(false);
   };
 
   const handleNotebookExport = () => {
     downloadNotebook(workflow);
+    toast.success('Notebook downloaded');
     onOpenChange(false);
   };
 

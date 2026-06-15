@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsePythonError } from '@/engine/kernel-client';
+import { parsePythonException } from '@/engine/errors';
 
-describe('parsePythonError', () => {
+describe('parsePythonException', () => {
   it('extracts message and traceback from Pyodide-style errors', () => {
-    const error = parsePythonError({
+    const error = parsePythonException({
       message: 'SyntaxError: invalid syntax',
       traceback: 'Traceback (most recent call last):\n  File "<stdin>"',
     });
@@ -12,21 +12,20 @@ describe('parsePythonError', () => {
     expect(error).toEqual({
       message: 'SyntaxError: invalid syntax',
       traceback: 'Traceback (most recent call last):\n  File "<stdin>"',
+      nodeId: undefined,
     });
   });
 
-  it('handles Error instances', () => {
-    const error = parsePythonError(new Error('Worker failed'));
-    expect(error.message).toBe('Worker failed');
+  it('includes nodeId when provided', () => {
+    const error = parsePythonException(new Error('Node failed'), 'n1');
+    expect(error).toEqual({
+      message: 'Node failed',
+      traceback: undefined,
+      nodeId: 'n1',
+    });
   });
 
   it('stringifies unknown values', () => {
-    expect(parsePythonError(42).message).toBe('42');
-  });
-});
-
-describe('kernel-client types', () => {
-  it('exports parsePythonError helper', () => {
-    expect(typeof parsePythonError).toBe('function');
+    expect(parsePythonException(42).message).toBe('42');
   });
 });

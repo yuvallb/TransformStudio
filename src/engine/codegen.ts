@@ -1,7 +1,7 @@
 import { getNodeDefinition } from '@/nodes/registry';
 import type { NodeDefinition } from '@/nodes/types';
 
-import type { Workflow, WorkflowEdge, WorkflowNode } from '@/lib/types';
+import type { Workflow, WorkflowNode } from '@/lib/types';
 import { paramsToRecord, sanitizeCommentLine } from '@/lib/utils';
 
 import { getInputVars, topoSort } from './topo-sort';
@@ -18,7 +18,7 @@ export function getSetupLines(workflow: PipelineWorkflow): string[] {
     'import pandas as pd',
     'import numpy as np',
     '',
-    'pd.options.mode.copy_on_write = True',
+    '# Copy-on-Write is enabled by default in Pyodide pandas >= 3',
   ];
 
   if (workflow.params.length > 0) {
@@ -93,42 +93,3 @@ export function generateNodeCode(nodeId: string, workflow: PipelineWorkflow): st
   return compileNodeExportCode(node, workflow);
 }
 
-export function validateConnection(
-  sourceType: string,
-  targetType: string,
-  edges: WorkflowEdge[],
-  targetId: string,
-  targetHandle?: string | null,
-): string | null {
-  const def = getNodeDefinition(targetType as Workflow['nodes'][0]['type']);
-  const incoming = edges.filter((e) => e.target === targetId);
-
-  if (def.category === 'source') {
-    return 'Source nodes cannot have inputs';
-  }
-
-  if (incoming.length >= def.inputs.length) {
-    return `${def.label} already has the maximum number of inputs`;
-  }
-
-  const usedHandles = new Set(
-    incoming.map((e) => e.targetHandle ?? def.inputs[0]?.id).filter(Boolean),
-  );
-
-  if (def.inputs.length > 1) {
-    const handle = targetHandle ?? def.inputs.find((p) => !usedHandles.has(p.id))?.id;
-    if (!handle) {
-      return `${def.label} has no available input ports`;
-    }
-    if (usedHandles.has(handle)) {
-      return `Input port "${handle}" is already connected`;
-    }
-  }
-
-  const sourceDef = getNodeDefinition(sourceType as Workflow['nodes'][0]['type']);
-  if (sourceDef.category === 'output') {
-    return 'Output nodes cannot be connected as sources';
-  }
-
-  return null;
-}

@@ -141,9 +141,11 @@ plan/             Architecture docs (do not move or delete)
 
 | Store | Owns | Persisted? |
 |-------|------|------------|
-| `workflow-store` | Graph, params, selection | Yes (Dexie) |
+| `workflow-store` | Graph, params, selection; **datasets** (in-memory map, persisted separately via Dexie `dataset-repo`); **staleNodeIds**, **paramOverrides**, **deletedNodeIds** (execution-adjacent transient state, not in Dexie) | Graph/params: yes (Dexie). Datasets: yes (Dexie, keyed by workflow + node). Transient execution fields: no |
 | `runtime-store` | Per-node status, previews, errors | No |
 | `ui-store` | Panel toggles, dialogs | No |
+
+`staleNodeIds`, `paramOverrides`, and `deletedNodeIds` intentionally live in `workflow-store` (not `runtime-store`) to keep execution scheduling co-located with graph edits. Do not move them without a dedicated refactor.
 
 ### Execution engine
 

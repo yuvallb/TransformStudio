@@ -18,6 +18,7 @@
 - Graph-level errors: banner with dismiss
 - Copy traceback button
 - Red node border + error icon (extend M2 styling)
+- Avoid infinite loops of errors popups
 
 ---
 

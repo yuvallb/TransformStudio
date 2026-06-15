@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { validateConnection } from '@/engine/codegen';
+import { validateConnection } from '@/engine/graph-validation';
 import type { WorkflowEdge, WorkflowNode } from '@/lib/types';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';

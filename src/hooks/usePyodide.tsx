@@ -11,20 +11,13 @@ import { toast } from 'sonner';
 
 import { kernelClient } from '@/engine/kernel-client';
 import { restoreWorkflowFromStorage } from '@/hooks/useWorkflow';
-import type {
-  KernelStatus,
-  LoadCsvOptions,
-  LoadCsvResult,
-  RunPythonResult,
-  StructuredError,
-} from '@/lib/types';
+import type { KernelStatus, LoadCsvOptions, LoadCsvResult, StructuredError } from '@/lib/types';
 
 interface PyodideContextValue {
   status: KernelStatus;
   progressStage: string;
   lastError: StructuredError | null;
   init: () => Promise<void>;
-  runPython: (code: string) => Promise<RunPythonResult>;
   loadCsv: (bytes: Uint8Array, options?: LoadCsvOptions) => Promise<LoadCsvResult>;
   restart: () => Promise<void>;
 }
@@ -68,17 +61,6 @@ export function PyodideProvider({ children }: { children: ReactNode }) {
     await kernelClient.init();
   }, []);
 
-  const runPython = useCallback(async (code: string): Promise<RunPythonResult> => {
-    setLastError(null);
-    const result = await kernelClient.runPython(code);
-
-    if (result.error) {
-      setLastError(result.error);
-    }
-
-    return result;
-  }, []);
-
   const loadCsv = useCallback(
     async (bytes: Uint8Array, options?: LoadCsvOptions): Promise<LoadCsvResult> => {
       setLastError(null);
@@ -104,11 +86,10 @@ export function PyodideProvider({ children }: { children: ReactNode }) {
       progressStage,
       lastError,
       init,
-      runPython,
       loadCsv,
       restart,
     }),
-    [status, progressStage, lastError, init, runPython, loadCsv, restart],
+    [status, progressStage, lastError, init, loadCsv, restart],
   );
 
   return <PyodideContext.Provider value={value}>{children}</PyodideContext.Provider>;

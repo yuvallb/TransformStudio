@@ -14,6 +14,38 @@ import type {
 import { createId } from '@/lib/utils';
 import { getNodeDefinition } from '@/nodes/registry';
 
+const MAX_HISTORY = 50;
+
+interface HistorySnapshot {
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  params: WorkflowParam[];
+  datasets: Record<string, NodeDataset>;
+}
+
+let historyLock = false;
+
+function snapshotFromWorkflow(workflow: Workflow, datasets: Record<string, NodeDataset>): HistorySnapshot {
+  return {
+    nodes: structuredClone(workflow.nodes),
+    edges: structuredClone(workflow.edges),
+    params: structuredClone(workflow.params),
+    datasets: structuredClone(datasets),
+  };
+}
+
+function pushHistory(get: () => WorkflowState): HistorySnapshot[] {
+  const state = get();
+  if (historyLock || !state.isHydrated) return state.historyPast;
+
+  const snapshot = snapshotFromWorkflow(state.workflow, state.datasets);
+  const past = [...state.historyPast, snapshot];
+  if (past.length > MAX_HISTORY) {
+    past.shift();
+  }
+  return past;
+}
+
 function createEmptyWorkflow(): Workflow {
   const now = new Date().toISOString();
   return {
@@ -62,6 +94,12 @@ interface WorkflowState {
   setHydrated: (hydrated: boolean) => void;
   editCount: number;
   incrementEditCount: () => void;
+  historyPast: HistorySnapshot[];
+  historyFuture: HistorySnapshot[];
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => ({
@@ -73,6 +111,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   paramOverrides: {},
   isHydrated: false,
   editCount: 0,
+  historyPast: [],
+  historyFuture: [],
 
   addNode(type, position) {
     const def = getNodeDefinition(type);
@@ -85,6 +125,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     };
 
     set((state) => ({
+      historyPast: pushHistory(get),
+      historyFuture: [],
       workflow: {
         ...state.workflow,
         nodes: [...state.workflow.nodes, node],
@@ -107,6 +149,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       delete remainingDatasets[nodeId];
 
       return {
+        historyPast: pushHistory(get),
+        historyFuture: [],
         workflow: {
           ...state.workflow,
           nodes: state.workflow.nodes.filter((n) => n.id !== nodeId),
@@ -128,6 +172,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       const stale = new Set([nodeId, ...downstream, ...state.staleNodeIds]);
 
       return {
+        historyPast: pushHistory(get),
+        historyFuture: [],
         workflow: {
           ...state.workflow,
           nodes: state.workflow.nodes.map((n) =>
@@ -192,6 +238,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const stale = new Set([edgeInput.target, ...downstream, ...state.staleNodeIds]);
 
     set({
+      historyPast: pushHistory(get),
+      historyFuture: [],
       workflow: {
         ...state.workflow,
         edges: [...state.workflow.edges, { ...edgeInput, id, targetHandle }],
@@ -213,6 +261,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       const stale = new Set([edge.target, ...downstream, ...state.staleNodeIds]);
 
       return {
+        historyPast: pushHistory(get),
+        historyFuture: [],
         workflow: {
           ...state.workflow,
           edges: state.workflow.edges.filter((e) => e.id !== edgeId),
@@ -319,6 +369,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
 
     set({
+      historyPast: pushHistory(get),
+      historyFuture: [],
       workflow: {
         ...state.workflow,
         params: [...state.workflow.params, entry],
@@ -362,6 +414,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     params[index] = updated;
 
     set({
+      historyPast: pushHistory(get),
+      historyFuture: [],
       workflow: {
         ...state.workflow,
         params,
@@ -381,6 +435,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       delete overrides[name];
 
       return {
+        historyPast: pushHistory(get),
+        historyFuture: [],
         workflow: {
           ...state.workflow,
           params: state.workflow.params.filter((p) => p.name !== name),
@@ -406,14 +462,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   loadWorkflowState(workflow, datasets = {}) {
+    const prevNodeIds = get().workflow.nodes.map((n) => n.id);
     set({
       workflow,
       selectedNodeId: null,
       staleNodeIds: new Set(workflow.nodes.map((n) => n.id)),
       datasets,
-      deletedNodeIds: [],
+      deletedNodeIds: [...get().deletedNodeIds, ...prevNodeIds],
       paramOverrides: {},
       editCount: 0,
+      historyPast: [],
+      historyFuture: [],
     });
   },
 
@@ -427,6 +486,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       deletedNodeIds: [],
       paramOverrides: {},
       editCount: 0,
+      historyPast: [],
+      historyFuture: [],
     });
     return workflow;
   },
@@ -437,6 +498,70 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   incrementEditCount() {
     set((state) => ({ editCount: state.editCount + 1 }));
+  },
+
+  undo() {
+    const state = get();
+    if (state.historyPast.length === 0) return;
+
+    historyLock = true;
+    try {
+      const previous = state.historyPast[state.historyPast.length - 1]!;
+      const current = snapshotFromWorkflow(state.workflow, state.datasets);
+
+      set({
+        historyPast: state.historyPast.slice(0, -1),
+        historyFuture: [current, ...state.historyFuture],
+        workflow: {
+          ...state.workflow,
+          nodes: previous.nodes,
+          edges: previous.edges,
+          params: previous.params,
+          updatedAt: new Date().toISOString(),
+        },
+        datasets: previous.datasets,
+        staleNodeIds: new Set(previous.nodes.map((n) => n.id)),
+        selectedNodeId: state.selectedNodeId,
+      });
+    } finally {
+      historyLock = false;
+    }
+  },
+
+  redo() {
+    const state = get();
+    if (state.historyFuture.length === 0) return;
+
+    historyLock = true;
+    try {
+      const next = state.historyFuture[0]!;
+      const current = snapshotFromWorkflow(state.workflow, state.datasets);
+
+      set({
+        historyPast: [...state.historyPast, current],
+        historyFuture: state.historyFuture.slice(1),
+        workflow: {
+          ...state.workflow,
+          nodes: next.nodes,
+          edges: next.edges,
+          params: next.params,
+          updatedAt: new Date().toISOString(),
+        },
+        datasets: next.datasets,
+        staleNodeIds: new Set(next.nodes.map((n) => n.id)),
+        selectedNodeId: state.selectedNodeId,
+      });
+    } finally {
+      historyLock = false;
+    }
+  },
+
+  canUndo() {
+    return get().historyPast.length > 0;
+  },
+
+  canRedo() {
+    return get().historyFuture.length > 0;
   },
 }));
 

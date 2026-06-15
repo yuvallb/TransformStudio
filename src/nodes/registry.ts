@@ -16,7 +16,7 @@ import { sourceCsv } from './source-csv';
 import { sourceJson } from './source-json';
 import type { NodeDefinition } from './types';
 
-export const nodeRegistry: Partial<Record<NodeType, NodeDefinition>> = {
+export const nodeRegistry: Record<NodeType, NodeDefinition> = {
   'source.csv': sourceCsv,
   'source.json': sourceJson,
   filter,
@@ -38,11 +38,7 @@ export function isKnownNodeType(type: string): type is NodeType {
 }
 
 export function getNodeDefinition(type: NodeType): NodeDefinition {
-  const def = nodeRegistry[type];
-  if (!def) {
-    throw new Error(`Unknown node type: ${type}`);
-  }
-  return def;
+  return nodeRegistry[type];
 }
 
 export const m2NodeTypes = Object.keys(nodeRegistry) as NodeType[];
@@ -51,7 +47,7 @@ export function getNodesByCategory(): Record<
   'source' | 'transform' | 'output',
   NodeDefinition[]
 > {
-  const all = Object.values(nodeRegistry) as NodeDefinition[];
+  const all = Object.values(nodeRegistry);
   return {
     source: all.filter((n) => n.category === 'source'),
     transform: all.filter((n) => n.category === 'transform'),

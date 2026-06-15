@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/ui/tab
 
 import { PyodideProvider } from '@/hooks/usePyodide';
 import { useExecution } from '@/hooks/useExecution';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { installTestBridge } from '@/test/bridge';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
+import { GraphErrorBanner } from '@/ui/GraphErrorBanner';
 import { Footer } from './layout/Footer';
 import { Header } from './layout/Header';
 import { Sidebar } from './layout/Sidebar';
@@ -23,6 +25,7 @@ if (import.meta.env.DEV) {
 function Workspace() {
   useWorkflow();
   useExecution();
+  useKeyboardShortcuts();
   const isHydrated = useWorkflowStore((s) => s.isHydrated);
   const bottomPanelOpen = useUiStore((s) => s.bottomPanelOpen);
   const rightPanelTab = useUiStore((s) => s.rightPanelTab);
@@ -39,6 +42,7 @@ function Workspace() {
           <p className="text-sm text-muted-foreground">Restoring workflow…</p>
         </div>
       )}
+      <GraphErrorBanner />
       <Header />
       <div className="flex min-h-0 flex-1">
         <Sidebar />

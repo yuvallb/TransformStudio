@@ -10,6 +10,7 @@ import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
 import { ColumnPicker } from '@/ui/ColumnPicker';
 import { ExpressionInput } from '@/ui/ExpressionInput';
+import { NodeErrorPanel } from '@/ui/NodeErrorPanel';
 import { Input } from '@/ui/components/ui/input';
 import {
   Select,
@@ -179,9 +180,7 @@ export function Inspector() {
       )}
 
       {runtime?.error && (
-        <div className="rounded-md border border-red-500/50 bg-red-500/10 p-3 text-xs text-red-600">
-          {runtime.error}
-        </div>
+        <NodeErrorPanel message={runtime.error} traceback={runtime.traceback} />
       )}
 
       {(errorsByField.get('_global') ?? []).map((message) => (

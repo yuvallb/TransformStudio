@@ -59,6 +59,7 @@ function runtimeState(nodeId: string, fingerprint: string) {
     preview: null,
     profile: null,
     error: null,
+    traceback: null,
   };
 }
 

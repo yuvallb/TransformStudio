@@ -92,7 +92,7 @@ describe('serializeWorkflow', () => {
     expect(() => deserializeWorkflow(JSON.stringify(payload))).toThrow(/unknown node type/);
   });
 
-  it('remaps malicious node ids on import to prevent code injection', () => {
+  it('rejects malicious node ids on import to prevent code injection', () => {
     const payload = {
       schemaVersion: 1,
       name: 'Injected',
@@ -108,9 +108,7 @@ describe('serializeWorkflow', () => {
       params: [],
     };
 
-    const restored = deserializeWorkflow(JSON.stringify(payload));
-    expect(restored.nodes[0]?.id).toMatch(/^[a-f0-9]{8}$/);
-    expect(restored.nodes[0]?.id).not.toContain('\n');
+    expect(() => deserializeWorkflow(JSON.stringify(payload))).toThrow(/must match/);
   });
 
   it('rejects duplicate node ids on import', () => {

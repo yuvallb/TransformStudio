@@ -63,7 +63,7 @@ describe('generateNotebook', () => {
 
     expect(nb.cells[0].cell_type).toBe('code');
     expect(nb.cells[0].source.join('')).toContain('import pandas as pd');
-    expect(nb.cells[0].source.join('')).toContain('copy_on_write');
+    expect(nb.cells[0].source.join('')).toContain('Copy-on-Write is enabled by default');
 
     const markdownCells = nb.cells.filter((c) => c.cell_type === 'markdown');
     const codeCells = nb.cells.filter((c) => c.cell_type === 'code');

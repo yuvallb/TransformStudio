@@ -11,9 +11,11 @@ import { useWorkflowStore } from '@/state/workflow-store';
 export function useExecution() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
+  const toastedErrorsRef = useRef(new Set<string>());
 
   const workflow = useWorkflowStore((s) => s.workflow);
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
+  const deletedNodeIds = useWorkflowStore((s) => s.deletedNodeIds);
   const isHydrated = useWorkflowStore((s) => s.isHydrated);
   const datasets = useWorkflowStore((s) => s.datasets);
   const clearStaleForNodes = useWorkflowStore((s) => s.clearStaleForNodes);
@@ -22,16 +24,26 @@ export function useExecution() {
   const setNodeStates = useRuntimeStore((s) => s.setNodeStates);
   const setGraphError = useRuntimeStore((s) => s.setGraphError);
   const setIsRunning = useRuntimeStore((s) => s.setIsRunning);
+  const setRunning = useRuntimeStore((s) => s.setRunning);
   const byNodeId = useRuntimeStore((s) => s.byNodeId);
   const clearNode = useRuntimeStore((s) => s.clearNode);
 
+  const toastErrorOnce = useCallback((message: string) => {
+    if (toastedErrorsRef.current.has(message)) return;
+    toastedErrorsRef.current.add(message);
+    toast.error(message);
+  }, []);
+
   const runPipeline = useCallback(async () => {
     if (runningRef.current) return;
-    if (workflow.nodes.length === 0) return;
+
+    const pendingDeletes = useWorkflowStore.getState().deletedNodeIds;
+    if (workflow.nodes.length === 0 && pendingDeletes.length === 0) return;
 
     runningRef.current = true;
     setIsRunning(true);
     setGraphError(null);
+    toastedErrorsRef.current.clear();
 
     try {
       const deleteNodeIds = consumeDeletedNodeIds();
@@ -59,6 +71,7 @@ export function useExecution() {
             preview: existing?.preview ?? null,
             profile: existing?.profile ?? null,
             error: failure.message,
+            traceback: null,
           });
         }
         setNodeStates(Object.fromEntries(updatedRuntime.entries()));
@@ -71,6 +84,7 @@ export function useExecution() {
       if (request.nodes.length > 0) {
         const cleared = new Map(useRuntimeStore.getState().byNodeId);
         for (const node of request.nodes) {
+          setRunning(node.nodeId, true);
           const existing = cleared.get(node.nodeId);
           if (existing) {
             cleared.set(node.nodeId, { ...existing, profile: null });
@@ -87,7 +101,7 @@ export function useExecution() {
 
       if (result.error && Object.keys(result.nodeResults).length === 0) {
         setGraphError(result.error.message);
-        toast.error(result.error.message);
+        toastErrorOnce(result.error.message);
         return;
       }
 
@@ -97,7 +111,7 @@ export function useExecution() {
       for (const [nodeId, state] of Object.entries(result.nodeResults)) {
         updatedRuntime.set(nodeId, state);
         if (state.status === 'error') {
-          toast.error(`Node failed: ${state.error ?? result.error?.message}`);
+          toastErrorOnce(`Node failed: ${state.error ?? result.error?.message ?? 'Unknown error'}`);
         }
       }
 
@@ -121,13 +135,19 @@ export function useExecution() {
     } catch (err) {
       if (err instanceof CycleError) {
         setGraphError(err.message);
-        toast.error(err.message);
+        toastErrorOnce(err.message);
       } else {
         const message = err instanceof Error ? err.message : String(err);
         setGraphError(message);
-        toast.error(message);
+        toastErrorOnce(message);
       }
     } finally {
+      for (const node of workflow.nodes) {
+        const runtime = useRuntimeStore.getState().byNodeId.get(node.id);
+        if (runtime?.status === 'running') {
+          setRunning(node.id, false);
+        }
+      }
       runningRef.current = false;
       setIsRunning(false);
     }
@@ -142,6 +162,8 @@ export function useExecution() {
     setNodeStates,
     setGraphError,
     setIsRunning,
+    setRunning,
+    toastErrorOnce,
   ]);
 
   const scheduleRun = useCallback(() => {
@@ -153,13 +175,13 @@ export function useExecution() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    if (staleNodeIds.size > 0) {
+    if (staleNodeIds.size > 0 || deletedNodeIds.length > 0) {
       scheduleRun();
     }
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [staleNodeIds, isHydrated, scheduleRun]);
+  }, [staleNodeIds, deletedNodeIds, isHydrated, scheduleRun]);
 
   return { runPipeline, scheduleRun };
 }

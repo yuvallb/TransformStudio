@@ -23,6 +23,7 @@ const defaultRuntime = (): NodeRuntimeState => ({
   preview: null,
   profile: null,
   error: null,
+  traceback: null,
 });
 
 export const useRuntimeStore = create<RuntimeState>((set, get) => ({
@@ -47,7 +48,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   setRunning(nodeId, running) {
     const next = new Map(get().byNodeId);
     const existing = next.get(nodeId) ?? { ...defaultRuntime(), nodeId };
-    next.set(nodeId, { ...existing, status: running ? 'running' : existing.status });
+    const status = running
+      ? 'running'
+      : existing.status === 'running'
+        ? 'stale'
+        : existing.status;
+    next.set(nodeId, { ...existing, status });
     set({ byNodeId: next });
   },
 
