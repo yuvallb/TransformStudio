@@ -67,7 +67,7 @@ export function PyodideDiagnostics() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Pyodide diagnostics</DialogTitle>
             <DialogDescription>

@@ -4,10 +4,11 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173/Transf
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
+  timeout: 300_000,
   reporter: 'list',
   use: {
     baseURL,

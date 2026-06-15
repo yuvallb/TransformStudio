@@ -11,6 +11,7 @@ test('Flow F: save version, edit, and revert', async ({ page }) => {
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
@@ -25,7 +26,7 @@ test('Flow F: save version, edit, and revert', async ({ page }) => {
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await page.getByRole('button', { name: 'History' }).click();
-  await page.getByLabel('Revert to compare-v1').click();
+  await page.locator('li').filter({ hasText: 'v1 initial' }).getByTitle('Revert').click();
   await expect(page.getByText('Reverted to selected version')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.react-flow__node')).toHaveCount(1, { timeout: 10000 });
 });
@@ -34,6 +35,7 @@ test('Flow F: page reload restores workflow', async ({ page }) => {
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
@@ -77,7 +79,7 @@ test('Flow F: compare two saved versions', async ({ page }) => {
   await page.getByRole('button', { name: 'History' }).click();
 
   const v1Row = page.locator('li').filter({ hasText: 'compare-v1' });
-  await v1Row.getByLabel('Compare compare-v1 with another version').click();
+  await v1Row.getByTitle('Compare with another version').click();
   await v1Row.getByRole('button', { name: 'compare-v2' }).click();
 
   await expect(page.getByText('Compare mode enabled')).toBeVisible();
@@ -111,7 +113,7 @@ test('Flow F: fork creates new workflow from snapshot', async ({ page }) => {
   await page.getByRole('button', { name: 'History' }).click();
 
   const baseRow = page.locator('li').filter({ hasText: 'fork-base' });
-  await baseRow.getByLabel('Fork from fork-base').click();
+  await baseRow.getByTitle('Fork').click();
 
   await expect(page.getByText('Forked workflow created')).toBeVisible({ timeout: 10000 });
   await expect(page.getByText(/\(fork\)/)).toBeVisible();

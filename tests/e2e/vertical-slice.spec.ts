@@ -27,6 +27,7 @@ test('Flow A: CSV upload shows preview and profile', async ({ page }) => {
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
@@ -42,6 +43,7 @@ test('Flow A: profile updates when selecting downstream node', async ({ page }) 
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
@@ -74,6 +76,7 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
   test.setTimeout(300000);
 
   await page.goto('./');
+  await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
