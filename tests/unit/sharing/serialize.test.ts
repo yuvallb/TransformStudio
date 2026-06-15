@@ -46,6 +46,13 @@ describe('serializeWorkflow', () => {
     expect(restored.name).toBe('Revenue Pipeline');
     expect(restored.nodes).toHaveLength(2);
     expect(restored.edges).toHaveLength(1);
+    expect(restored.nodes.every((n) => /^[a-f0-9]{8}$/.test(n.id))).toBe(true);
+    expect(restored.edges.every((e) => restored.nodes.some((n) => n.id === e.source))).toBe(
+      true,
+    );
+    expect(restored.edges.every((e) => restored.nodes.some((n) => n.id === e.target))).toBe(
+      true,
+    );
     expect(restored.params[0]?.name).toBe('min_amount');
     expect(restored.createdAt).toBeTruthy();
     expect(restored.updatedAt).toBeTruthy();
@@ -83,5 +90,41 @@ describe('serializeWorkflow', () => {
     };
 
     expect(() => deserializeWorkflow(JSON.stringify(payload))).toThrow(/unknown node type/);
+  });
+
+  it('remaps malicious node ids on import to prevent code injection', () => {
+    const payload = {
+      schemaVersion: 1,
+      name: 'Injected',
+      nodes: [
+        {
+          id: 'x\nimport os\n#',
+          type: 'filter',
+          position: { x: 0, y: 0 },
+          config: { expression: 'revenue > 0' },
+        },
+      ],
+      edges: [],
+      params: [],
+    };
+
+    const restored = deserializeWorkflow(JSON.stringify(payload));
+    expect(restored.nodes[0]?.id).toMatch(/^[a-f0-9]{8}$/);
+    expect(restored.nodes[0]?.id).not.toContain('\n');
+  });
+
+  it('rejects duplicate node ids on import', () => {
+    const payload = {
+      schemaVersion: 1,
+      name: 'Duplicate',
+      nodes: [
+        { id: 'dup', type: 'filter', position: { x: 0, y: 0 }, config: { expression: 'x > 0' } },
+        { id: 'dup', type: 'output', position: { x: 100, y: 0 }, config: {} },
+      ],
+      edges: [],
+      params: [],
+    };
+
+    expect(() => deserializeWorkflow(JSON.stringify(payload))).toThrow(/duplicate node id/);
   });
 });

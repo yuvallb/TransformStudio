@@ -56,8 +56,10 @@ async function doInit(onProgress?: (stage: string) => void): Promise<void> {
   await pyodide.loadPackage(['pandas', 'numpy']);
 
   onProgress?.('Configuring pandas…');
-  // Pandas 3+ (Pyodide 314) enables Copy-on-Write by default.
-  pyodide.runPython('import pandas as pd');
+  pyodide.runPython(`
+import pandas as pd
+pd.options.mode.copy_on_write = True
+`);
 
   pyodide.runPython(getPythonHelpers());
   onProgress?.('Ready');

@@ -27,6 +27,10 @@ export function normalizeExpression(expression: string, inputVar: string): strin
 }
 
 export function isExpressionSafe(expression: string): boolean {
+  if (/[;\r\n]/.test(expression)) {
+    return false;
+  }
+
   if (BLOCKED_PATTERNS.some((pattern) => pattern.test(expression))) {
     return false;
   }

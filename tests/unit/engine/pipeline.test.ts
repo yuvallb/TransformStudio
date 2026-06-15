@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/engine/kernel-client', () => ({
+  kernelClient: {
+    validateExpression: vi.fn().mockResolvedValue({ valid: true }),
+  },
+}));
 
 import { buildPipelineRequest, updateRuntimeFingerprints } from '@/engine/pipeline';
 import type { Workflow } from '@/lib/types';
@@ -84,6 +90,8 @@ describe('buildPipelineRequest', () => {
     });
 
     expect(request.nodes.map((n) => n.nodeId)).toEqual(['src']);
+    expect(request.validationFailures).toHaveLength(1);
+    expect(request.validationFailures[0]?.nodeId).toBe('flt');
   });
 
   it('skips unchanged source on incremental recompute', async () => {

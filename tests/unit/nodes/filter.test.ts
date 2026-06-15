@@ -25,6 +25,17 @@ describe('filter param substitution', () => {
     expect(code).not.toContain('.eval(');
   });
 
+  it('uses eval for non-param expressions in execution mode', () => {
+    const code = filter.compile(
+      { expression: 'revenue > 1000' },
+      ['node_a'],
+      'node_b',
+      {},
+      { mode: 'execution' },
+    );
+    expect(code).toBe('node_b = node_a[node_a.eval("revenue > 1000")]');
+  });
+
   it('validates unknown param references', () => {
     const errors = filter.validate(
       { expression: 'country == {country}' },

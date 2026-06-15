@@ -48,8 +48,9 @@ export const filter: NodeDefinition = {
     return errors;
   },
 
-  compile(config, inputVars, outputVar, _params) {
+  compile(config, inputVars, outputVar, _params, _context) {
     void _params;
+    void _context;
     const raw = typeof config.expression === 'string' ? config.expression.trim() : '';
     const input = inputVars[0];
     const normalized = normalizeExpression(raw, input);

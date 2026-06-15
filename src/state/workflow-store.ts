@@ -47,6 +47,7 @@ interface WorkflowState {
   markStaleForParams: (paramNames: string[]) => void;
   markAllStale: () => void;
   clearStale: () => void;
+  clearStaleForNodes: (nodeIds: string[]) => void;
   setDataset: (nodeId: string, dataset: NodeDataset) => void;
   consumeDeletedNodeIds: () => string[];
   setWorkflowName: (name: string) => void;
@@ -255,6 +256,16 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   clearStale() {
     set({ staleNodeIds: new Set() });
+  },
+
+  clearStaleForNodes(nodeIds) {
+    set((state) => {
+      const stale = new Set(state.staleNodeIds);
+      for (const id of nodeIds) {
+        stale.delete(id);
+      }
+      return { staleNodeIds: stale };
+    });
   },
 
   setDataset(nodeId, dataset) {

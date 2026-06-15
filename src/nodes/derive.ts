@@ -48,12 +48,13 @@ export const derive: NodeDefinition = {
     return errors;
   },
 
-  compile(config, inputVars, outputVar, _params) {
+  compile(config, inputVars, outputVar, _params, context) {
     void _params;
     const column = typeof config.column === 'string' ? config.column.trim() : '';
     const expression = typeof config.expression === 'string' ? config.expression.trim() : '';
     const input = inputVars[0];
     const normalized = normalizeExpression(expression, input);
+    void context;
 
     if (hasParamRefs(expression)) {
       return `${outputVar} = ${input}.assign(**{${JSON.stringify(column)}: ${normalized}})`;

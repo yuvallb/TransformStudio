@@ -30,4 +30,9 @@ describe('expression safety (sync pre-check)', () => {
   it('allows bracket notation', () => {
     expect(isExpressionSafe('df["revenue"] > 1000')).toBe(true);
   });
+
+  it('rejects semicolons and newlines', () => {
+    expect(isExpressionSafe("revenue > 0; del pd")).toBe(false);
+    expect(isExpressionSafe("revenue > 0\ndel pd")).toBe(false);
+  });
 });

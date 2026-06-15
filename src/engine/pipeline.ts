@@ -1,4 +1,6 @@
 import { getNodeDefinition } from '@/nodes/registry';
+import { normalizeExpression } from '@/nodes/expression';
+import { kernelClient } from '@/engine/kernel-client';
 
 import type {
   ExecutePipelineRequest,
@@ -92,13 +94,42 @@ export function getValidateContext(
   };
 }
 
+export interface BuildPipelineResult extends ExecutePipelineRequest {
+  validationFailures: { nodeId: string; message: string }[];
+}
+
+async function validateExpressionForNode(
+  node: WorkflowNode,
+  inputVars: string[],
+): Promise<string | null> {
+  if (node.type !== 'filter' && node.type !== 'derive') {
+    return null;
+  }
+
+  const expression =
+    typeof node.config.expression === 'string' ? node.config.expression.trim() : '';
+  if (!expression) {
+    return 'Expression is required';
+  }
+
+  const input = inputVars[0] ?? 'df';
+  const normalized = normalizeExpression(expression, input);
+  const result = await kernelClient.validateExpression(normalized);
+  if (!result.valid) {
+    return result.error ?? 'Expression failed security validation';
+  }
+
+  return null;
+}
+
 export async function buildPipelineRequest(
   options: BuildPipelineOptions,
-): Promise<ExecutePipelineRequest> {
+): Promise<BuildPipelineResult> {
   const { workflow, staleNodeIds, runtimeByNode, datasets, paramOverrides } = options;
   const sorted = topoSort(workflow.nodes, workflow.edges);
   const paramRecord = getEffectiveParams(workflow.params, paramOverrides);
   const nodes: ExecutePipelineRequest['nodes'] = [];
+  const validationFailures: BuildPipelineResult['validationFailures'] = [];
   const plannedIds = new Set<string>();
 
   for (const node of sorted) {
@@ -126,7 +157,18 @@ export async function buildPipelineRequest(
 
     const inputSchemas = getUpstreamSchemas(node.id, workflow.edges, runtimeByNode, def.inputs);
     const validateContext = getValidateContext(node, workflow, runtimeByNode, def.inputs);
-    if (def.validate(node.config, inputSchemas, validateContext).length > 0) {
+    const configErrors = def.validate(node.config, inputSchemas, validateContext);
+    if (configErrors.length > 0) {
+      validationFailures.push({
+        nodeId: node.id,
+        message: configErrors.map((e) => e.message).join('; '),
+      });
+      continue;
+    }
+
+    const expressionError = await validateExpressionForNode(node, inputVars);
+    if (expressionError) {
+      validationFailures.push({ nodeId: node.id, message: expressionError });
       continue;
     }
 
@@ -170,7 +212,7 @@ export async function buildPipelineRequest(
     plannedIds.add(node.id);
   }
 
-  return { nodes, params: paramRecord };
+  return { nodes, params: paramRecord, validationFailures };
 }
 
 export async function updateRuntimeFingerprints(

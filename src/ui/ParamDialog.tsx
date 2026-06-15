@@ -18,7 +18,7 @@ import {
 interface ParamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRun: () => void;
+  onRun: (overrides: Record<string, unknown>) => void;
 }
 
 export function ParamDialog({ open, onOpenChange, onRun }: ParamDialogProps) {
@@ -40,7 +40,7 @@ export function ParamDialog({ open, onOpenChange, onRun }: ParamDialogProps) {
   const handleRun = () => {
     setParamOverrides(values);
     onOpenChange(false);
-    onRun();
+    onRun(values);
   };
 
   return (

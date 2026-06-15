@@ -1,3 +1,8 @@
+import {
+  SHARE_DECODE_MAX_BYTES,
+  SHARE_DECODE_MAX_ENCODED_LENGTH,
+} from '@/lib/constants';
+
 function bytesToBase64url(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -30,11 +35,20 @@ export async function compressToBase64url(json: string): Promise<string> {
 }
 
 export async function decompressFromBase64url(encoded: string): Promise<string> {
+  if (encoded.length > SHARE_DECODE_MAX_ENCODED_LENGTH) {
+    throw new Error('Share link payload is too large');
+  }
+
   const compressed = base64urlToBytes(encoded);
   const ds = new DecompressionStream('gzip');
   const writer = ds.writable.getWriter();
   await writer.write(compressed);
   await writer.close();
   const decompressed = await new Response(ds.readable).arrayBuffer();
+
+  if (decompressed.byteLength > SHARE_DECODE_MAX_BYTES) {
+    throw new Error('Decompressed share payload exceeds size limit');
+  }
+
   return new TextDecoder().decode(decompressed);
 }

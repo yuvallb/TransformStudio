@@ -111,7 +111,7 @@ export async function executePipeline(
     try {
       pyodide.runPython(`
 import gc
-_var_name = "node_${nodeId}"
+_var_name = "node_" + ${JSON.stringify(nodeId)}
 if _var_name in globals():
     del globals()[_var_name]
 gc.collect()

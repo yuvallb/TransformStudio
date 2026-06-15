@@ -16,8 +16,7 @@ export function useExecution() {
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
   const isHydrated = useWorkflowStore((s) => s.isHydrated);
   const datasets = useWorkflowStore((s) => s.datasets);
-  const paramOverrides = useWorkflowStore((s) => s.paramOverrides);
-  const clearStale = useWorkflowStore((s) => s.clearStale);
+  const clearStaleForNodes = useWorkflowStore((s) => s.clearStaleForNodes);
   const consumeDeletedNodeIds = useWorkflowStore((s) => s.consumeDeletedNodeIds);
 
   const setNodeStates = useRuntimeStore((s) => s.setNodeStates);
@@ -40,6 +39,7 @@ export function useExecution() {
         clearNode(nodeId);
       }
 
+      const paramOverrides = useWorkflowStore.getState().paramOverrides;
       const request = await buildPipelineRequest({
         workflow,
         staleNodeIds,
@@ -48,13 +48,28 @@ export function useExecution() {
         paramOverrides,
       });
 
+      if (request.validationFailures.length > 0) {
+        const updatedRuntime = new Map(byNodeId);
+        for (const failure of request.validationFailures) {
+          const existing = updatedRuntime.get(failure.nodeId);
+          updatedRuntime.set(failure.nodeId, {
+            nodeId: failure.nodeId,
+            status: 'error',
+            fingerprint: existing?.fingerprint ?? null,
+            preview: existing?.preview ?? null,
+            profile: existing?.profile ?? null,
+            error: failure.message,
+          });
+        }
+        setNodeStates(Object.fromEntries(updatedRuntime.entries()));
+      }
+
       if (request.nodes.length === 0 && deleteNodeIds.length === 0) {
-        clearStale();
         return;
       }
 
       if (request.nodes.length > 0) {
-        const cleared = new Map(byNodeId);
+        const cleared = new Map(useRuntimeStore.getState().byNodeId);
         for (const node of request.nodes) {
           const existing = cleared.get(node.nodeId);
           if (existing) {
@@ -65,7 +80,8 @@ export function useExecution() {
       }
 
       const result = await kernelClient.executePipeline({
-        ...request,
+        nodes: request.nodes,
+        params: request.params,
         deleteNodeIds,
       });
 
@@ -95,7 +111,13 @@ export function useExecution() {
 
       const statesObj = Object.fromEntries(updatedRuntime.entries());
       setNodeStates(statesObj);
-      clearStale();
+
+      const successfulIds = executedIds.filter(
+        (nodeId) => result.nodeResults[nodeId]?.status === 'success',
+      );
+      if (successfulIds.length > 0) {
+        clearStaleForNodes(successfulIds);
+      }
     } catch (err) {
       if (err instanceof CycleError) {
         setGraphError(err.message);
@@ -113,9 +135,8 @@ export function useExecution() {
     workflow,
     staleNodeIds,
     datasets,
-    paramOverrides,
     byNodeId,
-    clearStale,
+    clearStaleForNodes,
     consumeDeletedNodeIds,
     clearNode,
     setNodeStates,

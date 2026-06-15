@@ -123,7 +123,10 @@ export function Header() {
       <ParamDialog
         open={paramDialogOpen}
         onOpenChange={setParamDialogOpen}
-        onRun={() => void runPipeline()}
+        onRun={(overrides) => {
+          useWorkflowStore.getState().setParamOverrides(overrides);
+          void runPipeline();
+        }}
       />
 
       <VersionHistory
