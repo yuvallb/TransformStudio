@@ -9,7 +9,7 @@ A browser-based visual data transformation tool. Build Pandas pipelines on a DAG
 ## Quick start
 
 1. Open the [live app](https://yuvallb.github.io/TransformStudio/)
-2. Click **Open demo** on the empty canvas, or drop a CSV/JSON file
+2. Use the **Open ▾** menu in the header (or the empty-canvas demo picker) to load a preset workflow, or drop a CSV/JSON file
 3. Drag nodes from the palette, connect them, and inspect preview/profile/code
 4. **Share** your workflow logic via URL (datasets stay local)
 5. **Export** as Python script or Jupyter notebook
@@ -37,6 +37,7 @@ Deployed to GitHub Pages on push to `main`.
 | `Delete` / `Backspace` | Delete selected node or edge |
 | `Ctrl/Cmd + Z` | Undo |
 | `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + N` | New workflow |
 | `Ctrl/Cmd + S` | Save version (manual snapshot) |
 
 Open **Help** in the footer for the full list.

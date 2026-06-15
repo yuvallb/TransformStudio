@@ -240,3 +240,11 @@ Instead of a raw text-based JSON diff which is difficult for users to interpret,
 ### New workflow
 
 - "New" button clears canvas, resets store, creates fresh workflow ID.
+
+### Workflow switcher
+
+- **Open ▾** menu in the header (between workflow name and History) is available at any time.
+- Sections: **New workflow**, **Demos** (three preset pipelines), **Recent** (up to 10 saved workflows from IndexedDB, sorted by `updatedAt`).
+- Unsaved-changes guard: if `editCount > 0` and no version snapshot exists, confirm before switching.
+- Keyboard shortcut: `Ctrl/Cmd + N` for new workflow.
+- Empty-canvas `DemoPicker` overlay remains for first-time users.

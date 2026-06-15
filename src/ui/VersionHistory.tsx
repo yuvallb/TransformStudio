@@ -223,7 +223,7 @@ export function VersionHistory({ open, onOpenChange, openSaveOnMount }: VersionH
             <Button size="sm" onClick={() => setSaveDialogOpen(true)}>
               Save version
             </Button>
-            <Button size="sm" variant="outline" onClick={() => void handleNewWorkflow()}>
+            <Button size="sm" variant="ghost" onClick={() => void handleNewWorkflow()}>
               New workflow
             </Button>
           </div>

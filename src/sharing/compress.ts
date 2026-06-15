@@ -27,10 +27,11 @@ function base64urlToBytes(encoded: string): Uint8Array {
 export async function compressToBase64url(json: string): Promise<string> {
   const bytes = new TextEncoder().encode(json);
   const cs = new CompressionStream('gzip');
+  const readPromise = new Response(cs.readable).arrayBuffer();
   const writer = cs.writable.getWriter();
   await writer.write(bytes);
   await writer.close();
-  const compressed = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+  const compressed = new Uint8Array(await readPromise);
   return bytesToBase64url(compressed);
 }
 
@@ -41,10 +42,11 @@ export async function decompressFromBase64url(encoded: string): Promise<string> 
 
   const compressed = base64urlToBytes(encoded);
   const ds = new DecompressionStream('gzip');
+  const readPromise = new Response(ds.readable).arrayBuffer();
   const writer = ds.writable.getWriter();
   await writer.write(compressed);
   await writer.close();
-  const decompressed = await new Response(ds.readable).arrayBuffer();
+  const decompressed = await readPromise;
 
   if (decompressed.byteLength > SHARE_DECODE_MAX_BYTES) {
     throw new Error('Decompressed share payload exceeds size limit');

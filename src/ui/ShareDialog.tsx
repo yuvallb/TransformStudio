@@ -41,7 +41,7 @@ function sizeWarningMessage(level: ShareSizeLevel): string | null {
 }
 
 export function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
-  const workflow = useWorkflowStore((s) => s.workflow);
+  const editCount = useWorkflowStore((s) => s.editCount);
   const loadWorkflowState = useWorkflowStore((s) => s.loadWorkflowState);
   const markAllStale = useWorkflowStore((s) => s.markAllStale);
   const setSharedImport = useUiStore((s) => s.setSharedImport);
@@ -59,6 +59,8 @@ export function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
     let cancelled = false;
     setEncoding(true);
     setShareUrl('');
+
+    const workflow = useWorkflowStore.getState().workflow;
 
     void encodeWorkflowToHash(workflow)
       .then(({ hash, sizeBytes: bytes }) => {
@@ -80,13 +82,14 @@ export function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
     return () => {
       cancelled = true;
     };
-  }, [open, workflow]);
+  }, [open, editCount]);
 
   const handleCopyLink = useCallback(async () => {
     if (sizeLevel === 'tooLarge') return;
 
     setCopying(true);
     try {
+      const workflow = useWorkflowStore.getState().workflow;
       const { hash } = await encodeWorkflowToHash(workflow);
       writeWorkflowHash(hash);
       await copyShareUrl();
@@ -97,12 +100,13 @@ export function ShareDialog({ open, onOpenChange }: ShareDialogProps) {
     } finally {
       setCopying(false);
     }
-  }, [workflow, sizeLevel]);
+  }, [sizeLevel]);
 
   const handleDownloadFile = useCallback(() => {
+    const workflow = useWorkflowStore.getState().workflow;
     downloadWorkflowFile(workflow);
     toast.success('Workflow downloaded');
-  }, [workflow]);
+  }, []);
 
   const handleImportFile = useCallback(
     async (file: File) => {

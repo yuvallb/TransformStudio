@@ -28,7 +28,7 @@ test('Flow F: save version, edit, and revert', async ({ page }) => {
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await page.getByRole('button', { name: 'Version history' }).click();
-  await page.locator('li').filter({ hasText: 'v1 initial' }).getByTitle('Revert').click();
+  await page.getByRole('button', { name: 'Revert to v1 initial' }).click();
   await expect(page.getByText('Reverted to selected version')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.react-flow__node')).toHaveCount(1, { timeout: 10000 });
 });
@@ -81,7 +81,7 @@ test('Flow F: compare two saved versions', async ({ page }) => {
   await page.getByRole('button', { name: 'Version history' }).click();
 
   const v1Row = page.locator('li').filter({ hasText: 'compare-v1' });
-  await v1Row.getByTitle('Compare with another version').click();
+  await v1Row.getByRole('button', { name: 'Compare compare-v1 with another version' }).click();
   await v1Row.getByRole('button', { name: 'compare-v2' }).click();
 
   await expect(page.getByText('Compare mode enabled')).toBeVisible();
@@ -115,7 +115,7 @@ test('Flow F: fork creates new workflow from snapshot', async ({ page }) => {
   await page.getByRole('button', { name: 'Version history' }).click();
 
   const baseRow = page.locator('li').filter({ hasText: 'fork-base' });
-  await baseRow.getByTitle('Fork').click();
+  await baseRow.getByRole('button', { name: 'Fork from fork-base' }).click();
 
   await expect(page.getByText('Forked workflow created')).toBeVisible({ timeout: 10000 });
   await expect(page.getByText(/\(fork\)/)).toBeVisible();

@@ -36,7 +36,8 @@ test('Pyodide diagnostics UI runs DataFrame smoke test', async ({ page }) => {
   await expect(page.getByRole('dialog')).toContainText('Help & shortcuts');
 
   await page.getByRole('button', { name: 'Test Pyodide' }).click();
-  await expect(page.getByRole('dialog', { name: 'Pyodide diagnostics' })).toBeVisible();
-  await expect(page.getByText('region')).toBeVisible({ timeout: 180000 });
-  await expect(page.getByText('revenue')).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Pyodide diagnostics' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('columnheader', { name: 'region' })).toBeVisible({ timeout: 180000 });
+  await expect(dialog.getByRole('columnheader', { name: 'revenue' })).toBeVisible();
 });
