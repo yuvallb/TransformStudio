@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { addNodeButton } from './helpers';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('Flow D: parameterized filter re-runs with new value', async ({ page }) => {
@@ -14,7 +16,7 @@ test('Flow D: parameterized filter re-runs with new value', async ({ page }) => 
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
 
   await page.evaluate(() => {
     const bridge = window.__transformStudioTest;
@@ -54,6 +56,6 @@ test('Flow D: parameterized filter re-runs with new value', async ({ page }) => 
   expect(ukFooterText).not.toBe(usFooterText);
 
   await page.getByRole('tab', { name: 'Code' }).click();
-  await page.getByRole('button', { name: 'Full pipeline' }).click();
+  await page.getByRole('button', { name: 'Show full pipeline code' }).click();
   await expect(page.locator('.cm-content')).toContainText("params['country']", { timeout: 10000 });
 });

@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { addNodeButton } from './helpers';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Versioning tests share IndexedDB — run serially to avoid cross-test interference.
@@ -22,10 +24,10 @@ test('Flow F: save version, edit, and revert', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Version saved')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
-  await page.getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'Version history' }).click();
   await page.locator('li').filter({ hasText: 'v1 initial' }).getByTitle('Revert').click();
   await expect(page.getByText('Reverted to selected version')).toBeVisible({ timeout: 10000 });
   await expect(page.locator('.react-flow__node')).toHaveCount(1, { timeout: 10000 });
@@ -41,7 +43,7 @@ test('Flow F: page reload restores workflow', async ({ page }) => {
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   // Wait for debounced autosave (2s) after the Filter node was added
@@ -68,7 +70,7 @@ test('Flow F: compare two saved versions', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Version saved')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await page.getByRole('button', { name: 'Save version' }).click();
@@ -76,7 +78,7 @@ test('Flow F: compare two saved versions', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Version saved')).toBeVisible();
 
-  await page.getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'Version history' }).click();
 
   const v1Row = page.locator('li').filter({ hasText: 'compare-v1' });
   await v1Row.getByTitle('Compare with another version').click();
@@ -102,7 +104,7 @@ test('Flow F: fork creates new workflow from snapshot', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Version saved')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await page.getByRole('button', { name: 'Save version' }).click();
@@ -110,7 +112,7 @@ test('Flow F: fork creates new workflow from snapshot', async ({ page }) => {
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Version saved')).toBeVisible();
 
-  await page.getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'Version history' }).click();
 
   const baseRow = page.locator('li').filter({ hasText: 'fork-base' });
   await baseRow.getByTitle('Fork').click();

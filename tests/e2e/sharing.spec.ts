@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { addNodeButton } from './helpers';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('Flow C: share workflow, restore in new context, upload and run', async ({ browser }) => {
@@ -18,7 +20,7 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   await sourcePage.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(sourcePage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
-  await sourcePage.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(sourcePage, 'Filter').click();
   await expect(sourcePage.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await sourcePage.evaluate(() => {

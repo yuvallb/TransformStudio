@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { addNodeButton } from './helpers';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test('Flow E: export pipeline as Jupyter notebook', async ({ page }) => {
@@ -14,7 +16,7 @@ test('Flow E: export pipeline as Jupyter notebook', async ({ page }) => {
   await page.getByLabel('Upload data file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
-  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await addNodeButton(page, 'Filter').click();
   await expect(page.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
 
   await page.evaluate(() => {
