@@ -2,7 +2,13 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { addNodeButton } from './helpers';
+import {
+  addNodeButton,
+  connectSourceToFilter,
+  fillFilterExpression,
+  selectCanvasNode,
+  selectGroupColumns,
+} from './helpers';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,21 +58,9 @@ test('Flow A: profile updates when selecting downstream node', async ({ page }) 
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   await addNodeButton(page, 'Filter').click();
-  await page.evaluate(() => {
-    const bridge = window.__transformStudioTest;
-    const ids = bridge?.getNodeIds() ?? [];
-    const source = ids.find((id) =>
-      document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('CSV Source'),
-    );
-    const filter = ids.find((id) =>
-      document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('Filter'),
-    );
-    if (source && filter) bridge?.connectNodes(source, filter);
-  });
-
-  const filterNode = page.locator('.react-flow__node').filter({ hasText: 'Filter' }).first();
-  await filterNode.click();
-  await page.getByPlaceholder(/revenue/).fill('revenue > 1000');
+  await connectSourceToFilter(page);
+  await selectCanvasNode(page, 'Filter');
+  await fillFilterExpression(page, 'revenue > 1000');
   await page.waitForTimeout(5000);
 
   await page.getByRole('tab', { name: 'Profile' }).click();
@@ -104,16 +98,12 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
     if (group && output) bridge?.connectNodes(group, output);
   });
 
-  const filterNode = page.locator('.react-flow__node').filter({ hasText: 'Filter' }).first();
-  const groupNode = page.locator('.react-flow__node').filter({ hasText: 'GroupBy' });
-
-  await filterNode.click();
-  await page.getByPlaceholder(/revenue/).fill('revenue > 1000');
-
+  await selectCanvasNode(page, 'Filter');
+  await fillFilterExpression(page, 'revenue > 1000');
   await page.waitForTimeout(4000);
 
-  await groupNode.click();
-  await page.getByPlaceholder('region, country').fill('region');
+  await selectCanvasNode(page, 'GroupBy');
+  await selectGroupColumns(page, 'region');
 
   await page.waitForTimeout(4000);
 

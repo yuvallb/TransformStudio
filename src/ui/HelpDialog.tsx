@@ -12,6 +12,7 @@ import {
 } from '@/ui/components/ui/dialog';
 
 const SHORTCUTS = [
+  { keys: '⌘/Ctrl + N', action: 'New workflow' },
   { keys: '⌘/Ctrl + S', action: 'Save version' },
   { keys: '⌘/Ctrl + Z', action: 'Undo' },
   { keys: '⌘/Ctrl + Shift + Z', action: 'Redo' },

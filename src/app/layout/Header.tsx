@@ -6,6 +6,7 @@ import { ExportDialog } from '@/ui/ExportDialog';
 import { ParamDialog } from '@/ui/ParamDialog';
 import { ShareDialog } from '@/ui/ShareDialog';
 import { VersionHistory } from '@/ui/VersionHistory';
+import { WorkflowSwitcher } from '@/ui/WorkflowSwitcher';
 import { useRuntimeStore } from '@/state/runtime-store';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
@@ -42,6 +43,7 @@ export function Header() {
           </span>
           <span className="text-sm font-semibold tracking-tight">Transform Studio</span>
           <span className="text-xs text-muted-foreground">— {workflow.name}</span>
+          <WorkflowSwitcher />
           {saveLabel && (
             <span
               className="text-xs text-muted-foreground"

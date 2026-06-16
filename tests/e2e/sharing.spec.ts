@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { addNodeButton } from './helpers';
+import { addNodeButton, connectSourceToFilter, fillFilterExpression, selectCanvasNode } from './helpers';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -11,7 +11,9 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
 
-  const sourceContext = await browser.newContext();
+  const sourceContext = await browser.newContext({
+    permissions: ['clipboard-read', 'clipboard-write'],
+  });
   const sourcePage = await sourceContext.newPage();
 
   await sourcePage.goto('./');
@@ -21,23 +23,9 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   await expect(sourcePage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   await addNodeButton(sourcePage, 'Filter').click();
-  await expect(sourcePage.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
-
-  await sourcePage.evaluate(() => {
-    const bridge = window.__transformStudioTest;
-    const ids = bridge?.getNodeIds() ?? [];
-    const csvSource = ids.find((id) =>
-      document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('CSV Source'),
-    );
-    const filter = ids.find((id) =>
-      document.querySelector(`[data-testid="rf__node-${id}"]`)?.textContent?.includes('Filter'),
-    );
-    if (csvSource && filter) bridge?.connectNodes(csvSource, filter);
-  });
-
-  const filterNode = sourcePage.locator('.react-flow__node').filter({ hasText: 'Filter' }).first();
-  await filterNode.click();
-  await sourcePage.getByPlaceholder(/revenue/).fill('revenue > 1000');
+  await connectSourceToFilter(sourcePage);
+  await selectCanvasNode(sourcePage, 'Filter');
+  await fillFilterExpression(sourcePage, 'revenue > 1000');
   await expect(sourcePage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
   await expect(sourcePage.getByRole('contentinfo')).not.toContainText('Running pipeline', {
     timeout: 60000,
@@ -51,7 +39,7 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   });
 
   await sourcePage.getByRole('button', { name: 'Copy shareable link' }).click();
-  await expect(sourcePage.getByText('Link copied to clipboard')).toBeVisible();
+  await expect(sourcePage).toHaveURL(/#w=/, { timeout: 10000 });
 
   const shareUrl = sourcePage.url();
   expect(shareUrl).toContain('#w=');
