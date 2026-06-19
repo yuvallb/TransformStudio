@@ -3,6 +3,7 @@ import { Github } from 'lucide-react';
 import { SITE } from '@/lib/site-config';
 import { useUiStore } from '@/state/ui-store';
 import { BrandLogo } from '@/ui/BrandLogo';
+import { SocialShareButtons } from '@/ui/SocialShareButtons';
 import { Button } from '@/ui/components/ui/button';
 import {
   Dialog,
@@ -51,6 +52,11 @@ export function AboutDialog() {
           <section>
             <h3 className="mb-1 font-medium">Privacy</h3>
             <p className="text-muted-foreground">{SITE.privacyNote}</p>
+          </section>
+
+          <section>
+            <h3 className="mb-2 font-medium">Share RefineIt</h3>
+            <SocialShareButtons />
           </section>
 
           <section className="flex flex-wrap gap-2">

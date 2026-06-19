@@ -22,6 +22,21 @@ describe('AboutDialog', () => {
       'href',
       SITE.urls.issues,
     );
+    expect(screen.getByRole('link', { name: /share refineit on reddit/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('reddit.com/submit'),
+    );
+    expect(screen.getByRole('link', { name: /share refineit via email/i })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^mailto:/),
+    );
+    expect(screen.getByRole('link', { name: /share refineit on whatsapp/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('wa.me'),
+    );
+    expect(
+      screen.getByRole('button', { name: /copy refineit link for instagram/i }),
+    ).toBeInTheDocument();
   }, 15_000);
 
   it('opens from ui store and closes on escape', async () => {
