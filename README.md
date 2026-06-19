@@ -1,6 +1,6 @@
 # RefineIt
 
-RefinA visual workspace for reusable data workflows. Build transformations as interactive flow diagrams, execute them locally in the browser using Python and Pandas, and share or export them as reproducible assets without managing infrastructure.
+RefineIt is a visual workspace for reusable data workflows. Build transformations as interactive flow diagrams, execute them locally in the browser using Python and Pandas, and share or export them as reproducible assets without managing infrastructure.
 
 **Live demo:** [https://yuvallb.github.io/RefineIt/](https://yuvallb.github.io/RefineIt/)
 
