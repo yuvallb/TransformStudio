@@ -1,7 +1,9 @@
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Download, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { downloadNodeOutput } from '@/export/data-download';
 import { useFileImport } from '@/hooks/useFileImport';
 import { getNodeDefinition } from '@/nodes/registry';
 import type { WorkflowNode } from '@/lib/types';
@@ -78,6 +80,35 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
   };
 
   const showInput = def.inputs.length > 0;
+  const isOutputNode = def.category === 'output';
+  const [isDownloading, setIsDownloading] = useState(false);
+  const canDownload = Boolean(preview) && !isDownloading && status !== 'running';
+
+  const outputFormat = workflowNode.config.format === 'json' ? 'json' : 'csv';
+  const outputFilename =
+    typeof workflowNode.config.filename === 'string'
+      ? workflowNode.config.filename
+      : `pipeline_output.${outputFormat}`;
+
+  const handleDownloadClick = useCallback(
+    async (event: React.MouseEvent) => {
+      event.stopPropagation();
+      if (!canDownload) return;
+
+      setIsDownloading(true);
+      try {
+        const result = await downloadNodeOutput(workflowNode.id, outputFormat, outputFilename);
+        if (result.ok) {
+          toast.success(`Downloaded ${outputFilename}`);
+        } else {
+          toast.error(result.message);
+        }
+      } finally {
+        setIsDownloading(false);
+      }
+    },
+    [canDownload, workflowNode.id, outputFormat, outputFilename],
+  );
 
   const borderClass = diffStatus
     ? diffBorder(diffStatus)
@@ -86,7 +117,7 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
   return (
     <div
       className={cn(
-        'min-w-[180px] rounded-lg border-2 bg-card shadow-sm transition-colors',
+        'relative min-w-[180px] rounded-lg border-2 bg-card shadow-sm transition-colors',
         borderClass,
         selected && !diffStatus && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
         isGhost && 'pointer-events-none opacity-80',
@@ -151,7 +182,30 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
         <span className="text-[10px] text-muted-foreground">{rowColText}</span>
       </div>
 
-      <Handle type="source" position={Position.Right} className="!z-10 !h-3 !w-3 !bg-primary" />
+      {isOutputNode ? (
+        <button
+          type="button"
+          onClick={handleDownloadClick}
+          disabled={!canDownload}
+          aria-label="Download output"
+          title={canDownload ? `Download ${outputFilename}` : 'Run pipeline to download output'}
+          data-testid="output-download"
+          className={cn(
+            'absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border-2 border-primary bg-card text-primary shadow-sm transition-colors',
+            canDownload
+              ? 'cursor-pointer hover:bg-primary hover:text-primary-foreground'
+              : 'cursor-not-allowed opacity-40',
+          )}
+        >
+          {isDownloading ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <Download className="size-3" />
+          )}
+        </button>
+      ) : (
+        <Handle type="source" position={Position.Right} className="!z-10 !h-3 !w-3 !bg-primary" />
+      )}
     </div>
   );
 });

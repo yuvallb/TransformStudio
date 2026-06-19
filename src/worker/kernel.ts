@@ -157,6 +157,23 @@ gc.collect()
   return { nodeResults };
 }
 
+export function exportNodeOutput(
+  pyodide: PyodideInterface,
+  nodeId: string,
+  format: 'csv' | 'json',
+): string {
+  const varName = `node_${nodeId}`;
+  const exists = pyodide.runPython(`"${varName}" in globals()`);
+  if (!exists) {
+    throw new Error(`Node output not found: ${nodeId}`);
+  }
+
+  const helper = format === 'json' ? 'export_df_json' : 'export_df_csv';
+  const raw = pyodide.runPython(`${helper}(${varName})`);
+  const value = convertPyodideValue(raw);
+  return typeof value === 'string' ? value : String(value ?? '');
+}
+
 export function profileNode(pyodide: PyodideInterface, nodeId: string): ColumnProfile[] {
   const varName = `node_${nodeId}`;
   const exists = pyodide.runPython(`"${varName}" in globals()`);

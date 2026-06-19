@@ -176,6 +176,11 @@ export interface ProfileNodeResult {
   error?: StructuredError;
 }
 
+export interface ExportNodeResult {
+  data?: string;
+  error?: StructuredError;
+}
+
 export interface ExecutePipelineRequest {
   nodes: PipelineNodeRequest[];
   params: Record<string, unknown>;

@@ -7,6 +7,18 @@ import pandas as pd
 MAX_PROFILE_ROWS = 100_000
 
 
+def export_df_csv(df):
+    import io
+
+    buf = io.StringIO()
+    df.to_csv(buf, index=False)
+    return buf.getvalue()
+
+
+def export_df_json(df):
+    return df.to_json(orient="records", indent=2, date_format="iso")
+
+
 def preview_df(df, n=100):
     if df is None or len(df.columns) == 0:
         return {

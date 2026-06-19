@@ -4,6 +4,7 @@ import { parsePythonException } from '@/engine/errors';
 import type {
   ExecutePipelineRequest,
   ExecutePipelineResult,
+  ExportNodeResult,
   ExpressionValidationResult,
   KernelStatus,
   LoadCsvOptions,
@@ -241,6 +242,22 @@ export class KernelClient {
         nodeResults: result.nodeResults,
         error: parsePythonException(result.error),
       };
+    }
+
+    return result;
+  }
+
+  async exportNodeOutput(nodeId: string, format: 'csv' | 'json'): Promise<ExportNodeResult> {
+    await this.init();
+
+    if (!this.api) {
+      return { error: { message: 'Worker not available' } };
+    }
+
+    const result = await this.api.exportNodeOutput(nodeId, format);
+
+    if (result.error) {
+      return { error: parsePythonException(result.error) };
     }
 
     return result;

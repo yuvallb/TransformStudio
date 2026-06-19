@@ -5,6 +5,7 @@ import { parsePythonException } from '@/engine/errors';
 import type {
   ExecutePipelineRequest,
   ExecutePipelineResult,
+  ExportNodeResult,
   ExpressionValidationResult,
   LoadCsvOptions,
   LoadCsvResult,
@@ -12,7 +13,7 @@ import type {
   RunPythonResult,
 } from '@/lib/types';
 
-import { executePipeline, profileNode } from './kernel';
+import { executePipeline, exportNodeOutput, profileNode } from './kernel';
 import { getPythonHelpers } from './python/helpers';
 
 let pyodide: PyodideInterface | null = null;
@@ -137,6 +138,16 @@ const kernelApi = {
         nodeResults: {},
         error: parsePythonException(err),
       };
+    }
+  },
+
+  async exportNodeOutput(nodeId: string, format: 'csv' | 'json'): Promise<ExportNodeResult> {
+    try {
+      const api = await ensureInit();
+      const data = exportNodeOutput(api, nodeId, format);
+      return { data };
+    } catch (err) {
+      return { error: parsePythonException(err, nodeId) };
     }
   },
 
