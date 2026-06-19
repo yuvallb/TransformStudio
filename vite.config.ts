@@ -7,6 +7,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: '/RefineIt/',
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

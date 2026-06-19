@@ -27,6 +27,7 @@ interface UiState {
   versionDialogOpen: boolean;
   versionOpenSaveOnMount: boolean;
   helpDialogOpen: boolean;
+  aboutDialogOpen: boolean;
 
   setBottomPanelOpen: (open: boolean) => void;
   setCodeViewMode: (mode: CodeViewMode) => void;
@@ -41,6 +42,7 @@ interface UiState {
   setVersionDialogOpen: (open: boolean) => void;
   setVersionOpenSaveOnMount: (open: boolean) => void;
   setHelpDialogOpen: (open: boolean) => void;
+  setAboutDialogOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -57,6 +59,7 @@ export const useUiStore = create<UiState>((set) => ({
   versionDialogOpen: false,
   versionOpenSaveOnMount: false,
   helpDialogOpen: false,
+  aboutDialogOpen: false,
 
   setBottomPanelOpen(open) {
     set({ bottomPanelOpen: open });
@@ -108,5 +111,9 @@ export const useUiStore = create<UiState>((set) => ({
 
   setHelpDialogOpen(open) {
     set({ helpDialogOpen: open });
+  },
+
+  setAboutDialogOpen(open) {
+    set({ aboutDialogOpen: open });
   },
 }));

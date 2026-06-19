@@ -1,6 +1,9 @@
 import { History, Play, Share2, Download, FilePlus, GitCompare } from 'lucide-react';
 
 import { useExecution } from '@/hooks/useExecution';
+import { SITE } from '@/lib/site-config';
+import { AboutDialog } from '@/ui/AboutDialog';
+import { BrandLogo } from '@/ui/BrandLogo';
 import { Button } from '@/ui/components/ui/button';
 import { ExportDialog } from '@/ui/ExportDialog';
 import { ParamDialog } from '@/ui/ParamDialog';
@@ -30,6 +33,7 @@ export function Header() {
   const setVersionDialogOpen = useUiStore((s) => s.setVersionDialogOpen);
   const versionOpenSaveOnMount = useUiStore((s) => s.versionOpenSaveOnMount);
   const setVersionOpenSaveOnMount = useUiStore((s) => s.setVersionOpenSaveOnMount);
+  const setAboutDialogOpen = useUiStore((s) => s.setAboutDialogOpen);
 
   const saveLabel =
     saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : null;
@@ -37,12 +41,18 @@ export function Header() {
   return (
     <>
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-            T
-          </span>
-          <span className="text-sm font-semibold tracking-tight">RefineIt</span>
-          <span className="text-xs text-muted-foreground">— {workflow.name}</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            className="flex min-w-0 shrink-0 items-center gap-2 rounded-md hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => setAboutDialogOpen(true)}
+            aria-label={`About ${SITE.name}`}
+          >
+            <BrandLogo size="sm" />
+            <span className="text-sm font-semibold tracking-tight">{SITE.name}</span>
+            <span className="hidden text-xs text-muted-foreground lg:inline">· {SITE.tagline}</span>
+          </button>
+          <span className="hidden text-xs text-muted-foreground sm:inline">— {workflow.name}</span>
           <WorkflowSwitcher />
           {saveLabel && (
             <span
@@ -152,6 +162,8 @@ export function Header() {
         }}
         openSaveOnMount={versionOpenSaveOnMount}
       />
+
+      <AboutDialog />
     </>
   );
 }

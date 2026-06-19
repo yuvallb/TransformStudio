@@ -39,6 +39,7 @@ This folder contains the architecture and implementation plan for building **Ref
 | [08-repo-structure.md](./08-repo-structure.md) | Proposed source layout |
 | [09-risks-and-mitigations.md](./09-risks-and-mitigations.md) | Technical risks |
 | [10-testing.md](./10-testing.md) | Test strategy |
+| [11-branding-and-product-surface.md](./11-branding-and-product-surface.md) | Logo, tagline, About dialog, GitHub links, SEO |
 
 ## One-sentence summary
 

@@ -73,13 +73,16 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     margin: 0;
-    min-height: 100vh;
-  }
-
-  #root {
-    min-height: 100vh;
+    height: 100dvh;
   }
 }

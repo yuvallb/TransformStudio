@@ -1,0 +1,29 @@
+import { cn } from '@/lib/utils';
+
+const SIZES = {
+  sm: 'size-7',
+  md: 'size-12',
+} as const;
+
+interface BrandLogoProps {
+  size?: keyof typeof SIZES;
+  className?: string;
+}
+
+export function BrandLogo({ size = 'sm', className }: BrandLogoProps) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className={cn('shrink-0', SIZES[size], className)}
+    >
+      <rect width="32" height="32" rx="6" fill="#10B981" />
+      <path
+        d="M10 8h6.5c3.3 0 5.5 2 5.5 5.2 0 2.5-1.4 4.2-3.6 4.8L22 24h-3.5l-3.3-5.5H13V24h-3V8zm3 3v4.5h3.2c1.6 0 2.5-.8 2.5-2.2S17.8 11 16.2 11H13z"
+        fill="#fff"
+      />
+    </svg>
+  );
+}

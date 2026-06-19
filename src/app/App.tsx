@@ -33,7 +33,7 @@ function Workspace() {
   const setRightPanelTab = useUiStore((s) => s.setRightPanelTab);
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+    <div className="relative flex h-full flex-col overflow-hidden bg-background text-foreground">
       {!isHydrated && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -49,10 +49,10 @@ function Workspace() {
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex min-h-0 flex-1">
-            <main className="min-w-0 flex-1 bg-muted/20">
+            <main className="min-h-0 min-w-0 flex-1 bg-muted/20">
               <FileDropzone />
             </main>
-            <aside className="flex w-80 shrink-0 flex-col border-l border-border bg-card">
+            <aside className="flex min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l border-border bg-card">
               <Tabs
                 value={rightPanelTab}
                 onValueChange={(v) => setRightPanelTab(v as 'inspector' | 'profile' | 'code')}
