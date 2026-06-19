@@ -260,6 +260,10 @@ CSV Source → Filter → GroupBy → Output
 - [ ] Demo workflows: ship 2–3 example pipelines with sample datasets
 - [ ] Documentation: update README with screenshots, usage guide
 - [ ] E2E test suite: full vertical slice + sharing round-trip
+- [x] Brand logo + favicon; replace header placeholder
+- [x] About dialog with product copy and GitHub/issue links
+- [x] Footer external links; meta/OG tags
+- [x] Enrich demo welcome card with tagline and value props
 
 ### DoD
 

@@ -1,14 +1,21 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
+  applyEdgeChanges,
+  applyNodeChanges,
+  getNodesBounds,
+  useNodesInitialized,
+  useStore,
+  useViewport,
   type Connection,
   type Edge,
   type Node,
   type OnEdgesChange,
   type OnNodesChange,
+  type Viewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -21,13 +28,36 @@ import { NodeRenderer, type TransformNodeData } from './NodeRenderer';
 
 const nodeTypes = { transformNode: NodeRenderer };
 
+/** Approximate rendered size — keeps MiniMap usable before DOM measurement. */
+const FLOW_NODE_WIDTH = 180;
+const FLOW_NODE_HEIGHT = 120;
+
 function toFlowNodes(workflowNodes: WorkflowNode[]): Node<TransformNodeData>[] {
   return workflowNodes.map((n) => ({
     id: n.id,
     type: 'transformNode',
     position: n.position,
+    width: FLOW_NODE_WIDTH,
+    height: FLOW_NODE_HEIGHT,
     data: { workflowNode: n },
   }));
+}
+
+function mergeFlowNodes(
+  next: Node<TransformNodeData>[],
+  prev: Node<TransformNodeData>[],
+): Node<TransformNodeData>[] {
+  const prevById = new Map(prev.map((node) => [node.id, node]));
+  return next.map((node) => {
+    const existing = prevById.get(node.id);
+    if (!existing) return node;
+    return {
+      ...node,
+      measured: existing.measured,
+      width: existing.width ?? node.width,
+      height: existing.height ?? node.height,
+    };
+  });
 }
 
 function toFlowEdges(workflowEdges: WorkflowEdge[]): Edge[] {
@@ -39,6 +69,59 @@ function toFlowEdges(workflowEdges: WorkflowEdge[]): Edge[] {
     targetHandle: e.targetHandle,
     animated: true,
   }));
+}
+
+function areAllNodesInViewport(
+  nodes: Node[],
+  viewport: Viewport,
+  width: number,
+  height: number,
+): boolean {
+  if (nodes.length === 0) return true;
+
+  const bounds = getNodesBounds(nodes);
+  if (bounds.width === 0 && bounds.height === 0) return true;
+
+  const { x, y, zoom } = viewport;
+  const visibleLeft = -x / zoom;
+  const visibleTop = -y / zoom;
+  const visibleRight = (width - x) / zoom;
+  const visibleBottom = (height - y) / zoom;
+  const pad = 16 / zoom;
+
+  return (
+    bounds.x >= visibleLeft - pad &&
+    bounds.y >= visibleTop - pad &&
+    bounds.x + bounds.width <= visibleRight + pad &&
+    bounds.y + bounds.height <= visibleBottom + pad
+  );
+}
+
+function CanvasMiniMap() {
+  const viewport = useViewport();
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  const nodes = useStore((state) => state.nodes);
+  const nodesInitialized = useNodesInitialized();
+
+  const showMinimap =
+    nodesInitialized &&
+    width > 0 &&
+    height > 0 &&
+    !areAllNodesInViewport(nodes, viewport, width, height);
+
+  if (!showMinimap) return null;
+
+  return (
+    <MiniMap
+      zoomable
+      pannable
+      className="!bg-card"
+      nodeColor="#64748b"
+      nodeStrokeColor="#334155"
+      maskColor="rgb(148 163 184 / 0.25)"
+    />
+  );
 }
 
 interface FlowCanvasProps {
@@ -55,7 +138,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
   const updateNodePosition = useWorkflowStore((s) => s.updateNodePosition);
   const selectNode = useWorkflowStore((s) => s.selectNode);
 
-  const nodes = useMemo(() => {
+  const baseNodes = useMemo(() => {
     const displayNodes = compareMode ? compareMode.targetWorkflow.nodes : workflow.nodes;
     const flowNodes = toFlowNodes(displayNodes).map((n) => ({
       ...n,
@@ -71,6 +154,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
             id: removedId,
             type: 'transformNode',
             position: removedNode.position,
+            width: FLOW_NODE_WIDTH,
+            height: FLOW_NODE_HEIGHT,
             draggable: false,
             selectable: true,
             selected: removedId === selectedNodeId,
@@ -82,7 +167,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
 
     return flowNodes;
   }, [workflow.nodes, selectedNodeId, compareMode]);
-  const edges = useMemo(() => {
+
+  const baseEdges = useMemo(() => {
     if (!compareMode) {
       return toFlowEdges(workflow.edges);
     }
@@ -117,8 +203,21 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
     return [...targetEdges, ...ghostEdges];
   }, [workflow.edges, compareMode]);
 
+  const [flowNodes, setFlowNodes] = useState<Node<TransformNodeData>[]>(baseNodes);
+  const [flowEdges, setFlowEdges] = useState<Edge[]>(baseEdges);
+
+  useEffect(() => {
+    setFlowNodes((prev) => mergeFlowNodes(baseNodes, prev));
+  }, [baseNodes]);
+
+  useEffect(() => {
+    setFlowEdges(baseEdges);
+  }, [baseEdges]);
+
   const onNodesChange: OnNodesChange<Node<TransformNodeData>> = useCallback(
     (changes) => {
+      setFlowNodes((nodes) => applyNodeChanges(changes, nodes));
+
       for (const change of changes) {
         if (change.type === 'position' && change.position && !compareMode) {
           updateNodePosition(change.id, change.position);
@@ -140,6 +239,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
+      setFlowEdges((edges) => applyEdgeChanges(changes, edges));
+
       if (compareMode) return;
       for (const change of changes) {
         if (change.type === 'remove') {
@@ -215,8 +316,8 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
   return (
     <div className="h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={flowNodes}
+        edges={flowEdges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -232,7 +333,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
       >
         <Background gap={16} size={1} />
         <Controls />
-        <MiniMap zoomable pannable className="!bg-card" />
+        <CanvasMiniMap />
       </ReactFlow>
     </div>
   );

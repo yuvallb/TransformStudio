@@ -72,4 +72,4 @@ See [`plan/`](./plan/) for full design docs. Execution planning (topo sort, fing
 
 ## License
 
-See repository for license details.
+[Apache License 2.0](./LICENSE)

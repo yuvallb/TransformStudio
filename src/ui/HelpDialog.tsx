@@ -1,5 +1,6 @@
-import { Keyboard } from 'lucide-react';
+import { ExternalLink, Keyboard } from 'lucide-react';
 
+import { SITE } from '@/lib/site-config';
 import { useUiStore } from '@/state/ui-store';
 import { PyodideDiagnostics } from '@/ui/PyodideDiagnostics';
 import { Button } from '@/ui/components/ui/button';
@@ -31,10 +32,28 @@ export function HelpDialog() {
             <Keyboard className="size-4" />
             Help & shortcuts
           </DialogTitle>
-          <DialogDescription>Keyboard shortcuts and runtime diagnostics.</DialogDescription>
+          <DialogDescription>Getting started, keyboard shortcuts, and runtime diagnostics.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Getting started</p>
+            <ol className="list-decimal space-y-1 pl-4 text-sm text-muted-foreground">
+              {SITE.gettingStarted.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <a
+              href={SITE.urls.readme}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              Full documentation on GitHub
+              <ExternalLink className="size-3" aria-hidden="true" />
+            </a>
+          </div>
+
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">Keyboard shortcuts</p>
             <table className="w-full text-sm">
