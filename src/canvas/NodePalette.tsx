@@ -15,7 +15,8 @@ import {
   Type,
 } from 'lucide-react';
 
-import { getNodesByCategory } from '@/nodes/registry';
+import { useFileImport } from '@/hooks/useFileImport';
+import { getNodeDefinition, getNodesByCategory } from '@/nodes/registry';
 import type { NodeType } from '@/lib/types';
 import { useWorkflowStore } from '@/state/workflow-store';
 
@@ -45,6 +46,7 @@ const NODE_ICONS: Partial<Record<NodeType, React.ComponentType<{ className?: str
 export function NodePalette() {
   const grouped = getNodesByCategory();
   const addNode = useWorkflowStore((s) => s.addNode);
+  const { requestImport } = useFileImport();
 
   const onDragStart = (event: React.DragEvent, type: NodeType) => {
     event.dataTransfer.setData('application/transformstudio-node', type);
@@ -54,7 +56,14 @@ export function NodePalette() {
   const onAddClick = (type: NodeType) => {
     const state = useWorkflowStore.getState();
     const index = state.workflow.nodes.length;
-    addNode(type, { x: 80 + index * 220, y: 180 });
+    const position = { x: 80 + index * 220, y: 180 };
+
+    if (getNodeDefinition(type).category === 'source') {
+      requestImport(type as 'source.csv' | 'source.json', { position });
+      return;
+    }
+
+    addNode(type, position);
   };
 
   return (

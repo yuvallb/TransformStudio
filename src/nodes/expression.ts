@@ -51,3 +51,57 @@ export function extractBracketColumns(expression: string): string[] {
   if (!matches) return [];
   return matches.map((m) => m.slice(2, -2));
 }
+
+const EXPRESSION_KEYWORDS = new Set([
+  'and',
+  'or',
+  'not',
+  'True',
+  'False',
+  'None',
+  'in',
+  'is',
+  'df',
+  'params',
+]);
+
+export function extractBareColumnNames(expression: string): string[] {
+  const withoutBrackets = expression.replace(/\[[^\]]+\]/g, ' ');
+  const withoutStrings = withoutBrackets.replace(/["'][^"']*["']/g, ' ');
+  const withoutParams = withoutStrings.replace(/\{(\w+)\}/g, ' ');
+
+  const names = new Set<string>();
+  const pattern = /\b([a-zA-Z_]\w*)\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(withoutParams)) !== null) {
+    const name = match[1]!;
+    if (EXPRESSION_KEYWORDS.has(name)) continue;
+    if (WHITELISTED_CALLS.has(name)) continue;
+    if (/^node_/.test(name)) continue;
+    names.add(name);
+  }
+
+  return [...names];
+}
+
+export function validateExpressionColumns(
+  expression: string,
+  upstreamColumnNames: Iterable<string>,
+): string[] {
+  const colNames = new Set(upstreamColumnNames);
+  const errors: string[] = [];
+
+  for (const col of extractBracketColumns(expression)) {
+    if (!colNames.has(col)) {
+      errors.push(`Column "${col}" not found upstream`);
+    }
+  }
+
+  for (const col of extractBareColumnNames(expression)) {
+    if (!colNames.has(col)) {
+      errors.push(`Column "${col}" not found upstream`);
+    }
+  }
+
+  return errors;
+}

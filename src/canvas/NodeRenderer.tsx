@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
+import { useFileImport } from '@/hooks/useFileImport';
 import { getNodeDefinition } from '@/nodes/registry';
 import type { WorkflowNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -64,6 +65,17 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
 
   const showImportPlaceholder =
     isSharedImport && def.category === 'source' && !hasDataset && !isGhost;
+  const needsFileImport = def.category === 'source' && !hasDataset && !isGhost;
+  const { requestImport } = useFileImport();
+
+  const handleImportClick = (event: React.MouseEvent) => {
+    if (!needsFileImport) return;
+    event.stopPropagation();
+    requestImport(workflowNode.type as 'source.csv' | 'source.json', {
+      nodeId: workflowNode.id,
+      position: workflowNode.position,
+    });
+  };
 
   const showInput = def.inputs.length > 0;
 
@@ -111,9 +123,21 @@ export const NodeRenderer = memo(function NodeRenderer({ data, selected }: NodeP
 
       <div className="px-3 py-2">
         {showImportPlaceholder ? (
-          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+          <button
+            type="button"
+            onClick={handleImportClick}
+            className="text-left text-xs font-medium text-amber-600 underline-offset-2 hover:underline dark:text-amber-400"
+          >
             Import your dataset
-          </p>
+          </button>
+        ) : needsFileImport ? (
+          <button
+            type="button"
+            onClick={handleImportClick}
+            className="truncate text-left text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            {summary}
+          </button>
         ) : (
           <p className="truncate text-xs text-muted-foreground">{summary}</p>
         )}

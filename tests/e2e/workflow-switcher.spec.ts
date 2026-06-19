@@ -36,7 +36,7 @@ test('Open menu → Demo loads and runs', async ({ page }) => {
   await expect(page.locator('.react-flow__node')).toHaveCount(4, { timeout: 10000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
-  await page.getByLabel('Upload data file').setInputFiles(salesPath);
+  await page.getByLabel('Upload CSV file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   const outputNode = page.locator('.react-flow__node').filter({ hasText: 'Output' });

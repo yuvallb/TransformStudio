@@ -1,5 +1,10 @@
 import { extractParamRefs } from '@/engine/param-substitute';
-import { extractBracketColumns, hasParamRefs, isExpressionSafe, normalizeExpression } from './expression';
+import {
+  hasParamRefs,
+  isExpressionSafe,
+  normalizeExpression,
+  validateExpressionColumns,
+} from './expression';
 import type { NodeDefinition } from './types';
 
 export { isExpressionSafe } from './expression';
@@ -30,11 +35,8 @@ export const filter: NodeDefinition = {
 
     const upstream = inputSchemas[0] ?? [];
     if (upstream.length > 0) {
-      const colNames = new Set(upstream.map((c) => c.name));
-      for (const col of extractBracketColumns(expression)) {
-        if (!colNames.has(col)) {
-          errors.push({ field: 'expression', message: `Column "${col}" not found upstream` });
-        }
+      for (const message of validateExpressionColumns(expression, upstream.map((c) => c.name))) {
+        errors.push({ field: 'expression', message });
       }
     }
 

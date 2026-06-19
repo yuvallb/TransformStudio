@@ -19,7 +19,7 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   await sourcePage.goto('./');
   await expect(sourcePage.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
-  await sourcePage.getByLabel('Upload data file').setInputFiles(salesPath);
+  await sourcePage.getByLabel('Upload CSV file').setInputFiles(salesPath);
   await expect(sourcePage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   await addNodeButton(sourcePage, 'Filter').click();
@@ -53,7 +53,7 @@ test('Flow C: share workflow, restore in new context, upload and run', async ({ 
   await expect(recipientPage.locator('.react-flow__node')).toHaveCount(2, { timeout: 10000 });
   await expect(recipientPage.getByText('Import your dataset')).toBeVisible();
 
-  await recipientPage.getByLabel('Upload data file').setInputFiles(salesPath);
+  await recipientPage.getByLabel('Upload CSV file').setInputFiles(salesPath);
   await expect(recipientPage.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   await sourceContext.close();

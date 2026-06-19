@@ -60,9 +60,12 @@ export function useExecution() {
         paramOverrides,
       });
 
+      const resolvedNodeIds = new Set<string>();
+
       if (request.validationFailures.length > 0) {
         const updatedRuntime = new Map(byNodeId);
         for (const failure of request.validationFailures) {
+          resolvedNodeIds.add(failure.nodeId);
           const existing = updatedRuntime.get(failure.nodeId);
           updatedRuntime.set(failure.nodeId, {
             nodeId: failure.nodeId,
@@ -78,6 +81,9 @@ export function useExecution() {
       }
 
       if (request.nodes.length === 0 && deleteNodeIds.length === 0) {
+        if (resolvedNodeIds.size > 0) {
+          clearStaleForNodes([...resolvedNodeIds]);
+        }
         return;
       }
 
@@ -105,11 +111,12 @@ export function useExecution() {
         return;
       }
 
-      const executedIds = Object.keys(result.nodeResults);
       let updatedRuntime = new Map(byNodeId);
+      const executedNodeIds = Object.keys(result.nodeResults);
 
       for (const [nodeId, state] of Object.entries(result.nodeResults)) {
         updatedRuntime.set(nodeId, state);
+        resolvedNodeIds.add(nodeId);
         if (state.status === 'error') {
           toastErrorOnce(`Node failed: ${state.error ?? result.error?.message ?? 'Unknown error'}`);
         }
@@ -119,18 +126,15 @@ export function useExecution() {
         workflow,
         updatedRuntime,
         datasets,
-        executedIds,
+        executedNodeIds,
         paramOverrides,
       );
 
       const statesObj = Object.fromEntries(updatedRuntime.entries());
       setNodeStates(statesObj);
 
-      const successfulIds = executedIds.filter(
-        (nodeId) => result.nodeResults[nodeId]?.status === 'success',
-      );
-      if (successfulIds.length > 0) {
-        clearStaleForNodes(successfulIds);
+      if (resolvedNodeIds.size > 0) {
+        clearStaleForNodes([...resolvedNodeIds]);
       }
     } catch (err) {
       if (err instanceof CycleError) {

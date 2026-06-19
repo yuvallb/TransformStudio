@@ -1,8 +1,10 @@
 import { getNodeDefinition } from '@/nodes/registry';
 import { normalizeExpression } from '@/nodes/expression';
 import { kernelClient } from '@/engine/kernel-client';
+import { peekCsvColumnNames } from '@/lib/csv-preview';
 
 import type {
+  ColumnSchema,
   ExecutePipelineRequest,
   NodeDataset,
   NodeRuntimeState,
@@ -47,6 +49,76 @@ async function resolveNodeFingerprint(
     upstreamFingerprints,
     datasetFingerprint,
   );
+}
+
+function schemaFromSourceDataset(
+  node: WorkflowNode,
+  dataset: NodeDataset,
+): ColumnSchema[] {
+  if (node.type === 'source.csv') {
+    const delimiter = typeof node.config.delimiter === 'string' ? node.config.delimiter : ',';
+    const header = node.config.header !== false;
+    return peekCsvColumnNames(dataset.data, { delimiter, header }).map((name) => ({
+      name,
+      dtype: 'unknown',
+      pandasDtype: 'object',
+      nullable: true,
+    }));
+  }
+
+  return [];
+}
+
+function resolveUpstreamSchemasForValidation(
+  nodeId: string,
+  workflow: Workflow,
+  runtimeByNode: Map<string, NodeRuntimeState>,
+  datasets: Record<string, NodeDataset>,
+  inputPorts: { id: string; label: string }[],
+  plannedIds: Set<string>,
+  staleNodeIds: Set<string>,
+): ColumnSchema[][] {
+  const incoming = workflow.edges.filter((e) => e.target === nodeId);
+
+  if (!inputPorts || inputPorts.length <= 1) {
+    return incoming.map((edge) => {
+      const upstreamNode = workflow.nodes.find((n) => n.id === edge.source);
+      const dataset = upstreamNode ? datasets[upstreamNode.id] : undefined;
+      if (
+        upstreamNode &&
+        dataset &&
+        (staleNodeIds.has(upstreamNode.id) || plannedIds.has(upstreamNode.id))
+      ) {
+        const peeked = schemaFromSourceDataset(upstreamNode, dataset);
+        if (peeked.length > 0) return peeked;
+      }
+      return runtimeByNode.get(edge.source)?.preview?.columns ?? [];
+    });
+  }
+
+  const schemaByHandle = new Map<string, ColumnSchema[]>();
+  for (const edge of incoming) {
+    const handle = edge.targetHandle ?? inputPorts[0]?.id;
+    if (!handle) continue;
+
+    const upstreamNode = workflow.nodes.find((n) => n.id === edge.source);
+    const dataset = upstreamNode ? datasets[upstreamNode.id] : undefined;
+    if (
+      upstreamNode &&
+      dataset &&
+      (staleNodeIds.has(upstreamNode.id) || plannedIds.has(upstreamNode.id))
+    ) {
+      const peeked = schemaFromSourceDataset(upstreamNode, dataset);
+      if (peeked.length > 0) {
+        schemaByHandle.set(handle, peeked);
+        continue;
+      }
+    }
+
+    schemaByHandle.set(handle, runtimeByNode.get(edge.source)?.preview?.columns ?? []);
+  }
+
+  return inputPorts.map((port) => schemaByHandle.get(port.id) ?? []);
 }
 
 function upstreamIsReady(
@@ -155,7 +227,15 @@ export async function buildPipelineRequest(
       continue;
     }
 
-    const inputSchemas = getUpstreamSchemas(node.id, workflow.edges, runtimeByNode, def.inputs);
+    const inputSchemas = resolveUpstreamSchemasForValidation(
+      node.id,
+      workflow,
+      runtimeByNode,
+      datasets,
+      def.inputs,
+      plannedIds,
+      staleNodeIds,
+    );
     const validateContext = getValidateContext(node, workflow, runtimeByNode, def.inputs);
     const configErrors = def.validate(node.config, inputSchemas, validateContext);
     if (configErrors.length > 0) {

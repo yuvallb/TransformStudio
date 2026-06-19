@@ -38,7 +38,7 @@ test('Flow A: CSV upload shows preview and profile', async ({ page }) => {
   await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
-  await page.getByLabel('Upload data file').setInputFiles(salesPath);
+  await page.getByLabel('Upload CSV file').setInputFiles(salesPath);
 
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
   await expect(page.getByRole('tab', { name: 'Profile' })).toBeVisible();
@@ -54,7 +54,7 @@ test('Flow A: profile updates when selecting downstream node', async ({ page }) 
   await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
-  await page.getByLabel('Upload data file').setInputFiles(salesPath);
+  await page.getByLabel('Upload CSV file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   await addNodeButton(page, 'Filter').click();
@@ -75,7 +75,7 @@ test('vertical slice: CSV → Filter → GroupBy → code → export', async ({ 
   await expect(page.getByText('Restoring workflow…')).toBeHidden({ timeout: 30000 });
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
-  await page.getByLabel('Upload data file').setInputFiles(salesPath);
+  await page.getByLabel('Upload CSV file').setInputFiles(salesPath);
 
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 

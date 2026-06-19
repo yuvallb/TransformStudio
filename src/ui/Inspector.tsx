@@ -8,9 +8,11 @@ import { diffWorkflowParams } from '@/versioning/diff';
 import { useRuntimeStore } from '@/state/runtime-store';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
+import { useFileImport } from '@/hooks/useFileImport';
 import { ColumnPicker } from '@/ui/ColumnPicker';
 import { ExpressionInput } from '@/ui/ExpressionInput';
 import { NodeErrorPanel } from '@/ui/NodeErrorPanel';
+import { Button } from '@/ui/components/ui/button';
 import { Input } from '@/ui/components/ui/input';
 import {
   Select,
@@ -202,6 +204,9 @@ export function Inspector() {
           onUpdate={update}
           workflowParamNames={compareTargetWorkflow.params.map((p) => p.name)}
           readOnly={isReadOnly}
+          nodeId={displayNode.id}
+          nodeType={displayNode.type}
+          nodeCategory={def.category}
         />
       ))}
 
@@ -220,6 +225,9 @@ function InspectorFieldRenderer({
   onUpdate,
   workflowParamNames,
   readOnly = false,
+  nodeId,
+  nodeType,
+  nodeCategory,
 }: {
   field: InspectorField;
   config: Record<string, unknown>;
@@ -228,7 +236,11 @@ function InspectorFieldRenderer({
   onUpdate: (key: string, value: unknown) => void;
   workflowParamNames: string[];
   readOnly?: boolean;
+  nodeId: string;
+  nodeType: ReturnType<typeof getNodeDefinition>['type'];
+  nodeCategory: ReturnType<typeof getNodeDefinition>['category'];
 }) {
+  const { requestImport } = useFileImport();
   const schemaIndex = 'schemaIndex' in field ? (field.schemaIndex ?? 0) : 0;
   const schema = upstreamSchemas[schemaIndex] ?? [];
 
@@ -236,6 +248,29 @@ function InspectorFieldRenderer({
     switch (field.kind) {
       case 'text': {
         const textReadOnly = readOnly || field.key === 'filename';
+        if (field.key === 'filename' && nodeCategory === 'source' && !readOnly) {
+          return (
+            <div className="flex gap-2">
+              <Input
+                value={String(config[field.key] ?? '')}
+                readOnly
+                placeholder="No file selected"
+                className="text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-xs"
+                onClick={() =>
+                  requestImport(nodeType as 'source.csv' | 'source.json', { nodeId })
+                }
+              >
+                Browse…
+              </Button>
+            </div>
+          );
+        }
         return (
           <Input
             value={String(config[field.key] ?? '')}

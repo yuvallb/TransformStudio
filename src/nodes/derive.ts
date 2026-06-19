@@ -1,5 +1,10 @@
 import { extractParamRefs } from '@/engine/param-substitute';
-import { extractBracketColumns, hasParamRefs, isExpressionSafe, normalizeExpression } from './expression';
+import {
+  hasParamRefs,
+  isExpressionSafe,
+  normalizeExpression,
+  validateExpressionColumns,
+} from './expression';
 import type { NodeDefinition } from './types';
 
 export const derive: NodeDefinition = {
@@ -31,10 +36,8 @@ export const derive: NodeDefinition = {
     } else if (!isExpressionSafe(expression)) {
       errors.push({ field: 'expression', message: 'Expression contains disallowed patterns' });
     } else if (upstream.length > 0) {
-      for (const col of extractBracketColumns(expression)) {
-        if (!colNames.has(col)) {
-          errors.push({ field: 'expression', message: `Column "${col}" not found upstream` });
-        }
+      for (const message of validateExpressionColumns(expression, upstream.map((c) => c.name))) {
+        errors.push({ field: 'expression', message });
       }
     }
 

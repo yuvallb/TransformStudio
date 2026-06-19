@@ -20,7 +20,7 @@ test('Pyodide worker loads on CSV import without console errors', async ({ page 
   await expect(page).toHaveTitle(/RefineIt/);
 
   const salesPath = path.resolve(__dirname, '../fixtures/sales.csv');
-  await page.getByLabel('Upload data file').setInputFiles(salesPath);
+  await page.getByLabel('Upload CSV file').setInputFiles(salesPath);
   await expect(page.getByRole('contentinfo')).toContainText(/rows ×/, { timeout: 180000 });
 
   expect(consoleErrors).toEqual([]);

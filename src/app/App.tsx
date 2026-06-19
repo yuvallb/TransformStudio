@@ -6,6 +6,7 @@ import { PreviewGrid } from '@/ui/PreviewGrid';
 import { ProfilePanel } from '@/ui/ProfilePanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/ui/tabs';
 
+import { FileImportProvider } from '@/hooks/useFileImport';
 import { PyodideProvider } from '@/hooks/usePyodide';
 import { useExecution } from '@/hooks/useExecution';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -90,7 +91,9 @@ function Workspace() {
 export function App() {
   return (
     <PyodideProvider>
-      <Workspace />
+      <FileImportProvider>
+        <Workspace />
+      </FileImportProvider>
     </PyodideProvider>
   );
 }
