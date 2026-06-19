@@ -2,7 +2,20 @@
 
 RefineIt is a visual workspace for reusable data workflows. Build transformations as interactive flow diagrams, execute them locally in the browser using Python and Pandas, and share or export them as reproducible assets without managing infrastructure.
 
-**Live demo:** [https://yuvallb.github.io/RefineIt/](https://yuvallb.github.io/RefineIt/)
+[https://yuvallb.github.io/RefineIt/](https://yuvallb.github.io/RefineIt/)
+
+
+![RefineIt Screen](https://github.com/yuvallb/RefineIt/blob/main/public/RefineItDemo1.png?raw=true)
+
+
+## Why RefineIt?
+
+* Runs entirely in your browser — Python/Pandas in a Web Worker; your data never leaves your machine.
+* Visual DAG builder — Drag, connect, and inspect live previews and column profiles.
+* Shareable logic — Workflow URLs contain configuration only, not your datasets.
+* Export-ready — Download as a Python script or Jupyter notebook.
+* Private - Imported datasets stay in your browser. Shared links never include your files.
+
 
 ---
 
