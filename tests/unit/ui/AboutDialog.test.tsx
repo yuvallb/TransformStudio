@@ -39,6 +39,12 @@ describe('AboutDialog', () => {
     ).toBeInTheDocument();
   }, 15_000);
 
+  it('renders power features section', () => {
+    render(<AboutDialog />);
+    expect(screen.getByRole('heading', { name: /power features/i })).toBeInTheDocument();
+    expect(screen.getByText(/custom python/i)).toBeInTheDocument();
+  });
+
   it('opens from ui store and closes on escape', async () => {
     const user = userEvent.setup();
     render(<AboutDialog />);

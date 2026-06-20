@@ -7,6 +7,9 @@ export const SITE = {
     'Imported datasets stay in your browser (IndexedDB). Shared links never include your files.',
   welcomeHint: 'Drop a CSV/JSON file anywhere on the canvas to start.',
   welcomeHintStorageKey: 'refineit.dismissedWelcomeHint',
+  customPythonAckStorageKey: 'refineit.customPythonAcknowledged',
+  powerUserNote:
+    'Custom Python (optional, off by default) lets you write Pandas snippets in a guarded worker sandbox. Enable with VITE_ENABLE_CUSTOM_PYTHON=true in your build. Imports and file access are blocked; review exported code before running elsewhere.',
   license: 'Open Source - Apache License 2.0',
   urls: {
     repo: 'https://github.com/yuvallb/RefineIt',

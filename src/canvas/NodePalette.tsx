@@ -1,6 +1,7 @@
 import { ChevronDown, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { requestAddNode } from '@/lib/custom-python-gate';
 import { useFileImport } from '@/hooks/useFileImport';
 import { getNodeIcon } from '@/nodes/node-icons';
 import { getNodeDefinition, getNodesByPaletteGroup } from '@/nodes/registry';
@@ -8,7 +9,6 @@ import { ALL_PALETTE_GROUPS, PALETTE_GROUP_LABELS } from '@/nodes/palette-groups
 import type { PaletteGroup } from '@/nodes/types';
 import type { NodeType } from '@/lib/types';
 import { useUiStore } from '@/state/ui-store';
-import { useWorkflowStore } from '@/state/workflow-store';
 import { Input } from '@/ui/components/ui/input';
 
 function matchesSearch(nodeType: NodeType, label: string, query: string): boolean {
@@ -28,7 +28,6 @@ function isGroupCollapsed(
 
 export function NodePalette() {
   const grouped = getNodesByPaletteGroup();
-  const addNode = useWorkflowStore((s) => s.addNode);
   const paletteCollapseState = useUiStore((s) => s.paletteCollapseState);
   const setPaletteGroupCollapsed = useUiStore((s) => s.setPaletteGroupCollapsed);
   const { requestImport } = useFileImport();
@@ -67,7 +66,7 @@ export function NodePalette() {
       return;
     }
 
-    addNode(type, position);
+    requestAddNode(type, position);
   };
 
   return (
@@ -132,7 +131,12 @@ export function NodePalette() {
                         className="flex cursor-grab items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing"
                       >
                         <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-                        {node.label}
+                        <span className="flex-1">{node.label}</span>
+                        {'paletteAdvanced' in node && node.paletteAdvanced && (
+                          <span className="rounded bg-amber-500/10 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-amber-700">
+                            Advanced
+                          </span>
+                        )}
                       </button>
                     );
                   })}

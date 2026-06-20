@@ -1,5 +1,6 @@
 import { CUSTOM_PYTHON_ENABLED } from '@/lib/constants';
 import { nodeType, type PaletteNodeDefinition } from './node-type';
+import type { CompileContext } from './types';
 
 const BLOCKED_PATTERNS = [
   /\bimport\b/i,
@@ -18,6 +19,13 @@ const BLOCKED_PATTERNS = [
   /\bcompile\s*\(/i,
 ];
 
+export const CUSTOM_PYTHON_INPUT_ALIAS = 'inp';
+export const CUSTOM_PYTHON_OUTPUT_ALIAS = 'out';
+
+export const CUSTOM_PYTHON_DEFAULT_CODE = `# Input DataFrame is \`${CUSTOM_PYTHON_INPUT_ALIAS}\`. Assign your result to \`${CUSTOM_PYTHON_OUTPUT_ALIAS}\`.
+${CUSTOM_PYTHON_OUTPUT_ALIAS} = ${CUSTOM_PYTHON_INPUT_ALIAS}.copy()
+`;
+
 export function isCustomPythonSafe(code: string): boolean {
   return !BLOCKED_PATTERNS.some((pattern) => pattern.test(code));
 }
@@ -27,12 +35,13 @@ export const customPython: PaletteNodeDefinition = {
   label: 'Custom Python',
   category: 'transform',
   paletteGroup: 'python',
+  paletteAdvanced: true,
   hiddenInPalette: !CUSTOM_PYTHON_ENABLED,
   inputs: [{ id: 'input', label: 'Input' }],
   outputs: 1,
 
   defaultConfig() {
-    return { code: '' };
+    return { code: CUSTOM_PYTHON_DEFAULT_CODE };
   },
 
   validate(config, _inputSchemas) {
@@ -63,22 +72,38 @@ export const customPython: PaletteNodeDefinition = {
     return errors;
   },
 
-  compile(config, inputVars, outputVar, _params?, _context?) {
+  compile(config, inputVars, outputVar, _params?, context?: CompileContext) {
     void _params;
-    void _context;
     const code = typeof config.code === 'string' ? config.code.trim() : '';
     const input = inputVars[0];
+    const lines: string[] = [];
 
-    return [
-      `# Custom Python — assign result to out`,
-      `out = ${input}.copy()`,
+    if (context?.mode === 'export') {
+      lines.push(
+        '# WARNING: Custom Python — review user-supplied code before running outside RefineIt',
+      );
+    }
+
+    lines.push(
+      `# Custom Python — input is \`${CUSTOM_PYTHON_INPUT_ALIAS}\`, assign result to \`${CUSTOM_PYTHON_OUTPUT_ALIAS}\``,
+      `${CUSTOM_PYTHON_INPUT_ALIAS} = ${input}`,
+      `${CUSTOM_PYTHON_OUTPUT_ALIAS} = ${CUSTOM_PYTHON_INPUT_ALIAS}.copy()`,
       code,
-      `${outputVar} = out`,
-    ].join('\n');
+      `${outputVar} = ${CUSTOM_PYTHON_OUTPUT_ALIAS}`,
+    );
+
+    return lines.join('\n');
   },
 
   inspectorSchema() {
-    return [{ kind: 'expression', key: 'code', label: 'Python code' }];
+    return [
+      {
+        kind: 'code',
+        key: 'code',
+        label: 'Python code',
+        minHeight: '180px',
+      },
+    ];
   },
 
   configSummary(config) {

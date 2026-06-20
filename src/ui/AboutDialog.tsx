@@ -75,6 +75,11 @@ export function AboutDialog() {
           </section>
 
           <section>
+            <h3 className="mb-1 font-medium">Power features</h3>
+            <p className="text-muted-foreground">{SITE.powerUserNote}</p>
+          </section>
+
+          <section>
             <h3 className="mb-2 font-medium">Share RefineIt</h3>
             <SocialShareButtons />
           </section>

@@ -30,6 +30,8 @@ interface UiState {
   helpDialogOpen: boolean;
   aboutDialogOpen: boolean;
   incompatibleDataDialogOpen: boolean;
+  customPythonConfirmOpen: boolean;
+  customPythonPendingPosition: { x: number; y: number } | null;
   paletteCollapseState: Partial<Record<PaletteGroup, boolean>>;
 
   setBottomPanelOpen: (open: boolean) => void;
@@ -47,6 +49,8 @@ interface UiState {
   setHelpDialogOpen: (open: boolean) => void;
   setAboutDialogOpen: (open: boolean) => void;
   setIncompatibleDataDialogOpen: (open: boolean) => void;
+  openCustomPythonConfirm: (position: { x: number; y: number }) => void;
+  closeCustomPythonConfirm: () => void;
   setPaletteGroupCollapsed: (group: PaletteGroup, collapsed: boolean) => void;
 }
 
@@ -66,6 +70,8 @@ export const useUiStore = create<UiState>((set) => ({
   helpDialogOpen: false,
   aboutDialogOpen: false,
   incompatibleDataDialogOpen: false,
+  customPythonConfirmOpen: false,
+  customPythonPendingPosition: null,
   paletteCollapseState: {},
 
   setBottomPanelOpen(open) {
@@ -126,6 +132,14 @@ export const useUiStore = create<UiState>((set) => ({
 
   setIncompatibleDataDialogOpen(open) {
     set({ incompatibleDataDialogOpen: open });
+  },
+
+  openCustomPythonConfirm(position) {
+    set({ customPythonConfirmOpen: true, customPythonPendingPosition: position });
+  },
+
+  closeCustomPythonConfirm() {
+    set({ customPythonConfirmOpen: false, customPythonPendingPosition: null });
   },
 
   setPaletteGroupCollapsed(group, collapsed) {

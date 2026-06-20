@@ -20,6 +20,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { validateConnection } from '@/engine/graph-validation';
+import { requestAddNode } from '@/lib/custom-python-gate';
 import type { WorkflowEdge, WorkflowNode } from '@/lib/types';
 import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
@@ -301,7 +302,7 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
 
       const nodeType = event.dataTransfer.getData('application/transformstudio-node');
       if (nodeType) {
-        useWorkflowStore.getState().addNode(nodeType as WorkflowNode['type'], position);
+        requestAddNode(nodeType as WorkflowNode['type'], position);
         return;
       }
 

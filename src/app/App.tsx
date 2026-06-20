@@ -4,6 +4,7 @@ import { FileDropzone } from '@/ui/FileDropzone';
 import { Inspector } from '@/ui/Inspector';
 import { PreviewGrid } from '@/ui/PreviewGrid';
 import { ProfilePanel } from '@/ui/ProfilePanel';
+import { CustomPythonConfirmDialog } from '@/ui/CustomPythonConfirmDialog';
 import { IncompatibleDataDialog } from '@/ui/IncompatibleDataDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/ui/tabs';
 
@@ -86,6 +87,7 @@ function Workspace() {
       <Footer />
       <Toaster />
       <IncompatibleDataDialog />
+      <CustomPythonConfirmDialog />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/state/workflow-store';
 import { useFileImport } from '@/hooks/useFileImport';
 import { ColumnPicker } from '@/ui/ColumnPicker';
 import { ExpressionInput } from '@/ui/ExpressionInput';
+import { CodeInput } from '@/ui/CodeInput';
 import { NodeErrorPanel } from '@/ui/NodeErrorPanel';
 import { Button } from '@/ui/components/ui/button';
 import { Input } from '@/ui/components/ui/input';
@@ -370,6 +371,16 @@ function InspectorFieldRenderer({
             value={String(config[field.key] ?? '')}
             onChange={(v) => onUpdate(field.key, v)}
             workflowParamNames={workflowParamNames}
+            readOnly={readOnly}
+          />
+        );
+      case 'code':
+        return (
+          <CodeInput
+            value={String(config[field.key] ?? '')}
+            onChange={(v) => onUpdate(field.key, v)}
+            placeholder={'placeholder' in field ? field.placeholder : undefined}
+            minHeight={'minHeight' in field ? field.minHeight : undefined}
             readOnly={readOnly}
           />
         );

@@ -60,15 +60,15 @@
 | **Mitigation** | `schemaVersion` for reject-forward checks. **No migration chains** — on incompatible IndexedDB (scan **all** workflows on boot), show blocking dialog with **Clear all local data**. Share import / old URLs: explicit error, user rebuilds. Document breaking changes in About/changelog. |
 | **Verification** | Unit test: IndexedDB with unknown node type or stale `schemaVersion` → incompatible dialog; clear → empty app. Share import of old workflow → structured error (no partial load). |
 
-## R7: Expression injection in Filter/Derive nodes
+## R7: Expression injection in Filter/Derive nodes and Custom Python
 
 | | |
 |---|---|
-| **Risk** | User-supplied expressions passed to Python `eval()` could execute arbitrary code |
-| **Likelihood** | Low in v1 (no custom Python node), but Filter/Derive use expressions |
+| **Risk** | User-supplied expressions or Python snippets could execute arbitrary code |
+| **Likelihood** | Low for Filter/Derive (single-expression AST whitelist); Medium when Custom Python is enabled |
 | **Impact** | Medium — Pyodide sandbox limits damage, but still undesirable |
-| **Mitigation** | Use Pandas `df.query()` or `df.eval()` with restricted scope (only column names + params). Do not use bare `exec()`. Custom Python node is post-M9 only ([12-node-expansion.md](./12-node-expansion.md) Phase 12) with AST whitelist. |
-| **Verification** | Test that expressions with `import os` or `__import__` are rejected |
+| **Mitigation** | Filter/Derive: Pandas `df.query()` / `df.eval()` with restricted scope; AST whitelist via `validate_expression()` in worker pre-flight. Custom Python (`custom.python`, post-M9): feature-flagged (`VITE_ENABLE_CUSTOM_PYTHON`); first-use confirm dialog; user code wrapped with `inp`/`out` template; `validate_custom_python()` AST parse in worker denies imports, unsafe calls, and dunder access; regex pre-check on main thread; export includes warning comment. |
+| **Verification** | Test that Filter/Derive expressions with `import os` or `__import__` are rejected; Custom Python `import os` rejected at validate time; allowed Pandas transform executes in fixture pipeline |
 
 ## R8: IndexedDB storage limits
 

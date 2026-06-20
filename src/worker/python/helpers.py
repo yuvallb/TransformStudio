@@ -97,6 +97,27 @@ def profile_df(df):
 
 WHITELISTED_CALLS = {"abs", "round", "min", "max"}
 
+BLOCKED_CUSTOM_PYTHON_CALLS = {
+    "exec",
+    "eval",
+    "open",
+    "__import__",
+    "compile",
+    "getattr",
+    "setattr",
+    "globals",
+    "locals",
+    "help",
+    "input",
+    "breakpoint",
+    "vars",
+    "dir",
+    "delattr",
+    "memoryview",
+    "bytes",
+    "bytearray",
+}
+
 _PARAM_REF_PATTERN = re.compile(r"\{(\w+)\}")
 
 
@@ -245,6 +266,11 @@ def validate_custom_python(code):
             if isinstance(node.func, ast.Attribute):
                 continue
             if isinstance(node.func, ast.Name):
+                if node.func.id in BLOCKED_CUSTOM_PYTHON_CALLS:
+                    return {
+                        "valid": False,
+                        "error": f"Call to '{node.func.id}' not allowed",
+                    }
                 continue
             return {"valid": False, "error": "Disallowed call expression"}
 
