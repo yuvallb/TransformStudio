@@ -13,6 +13,7 @@ import { useUiStore } from '@/state/ui-store';
 import { useWorkflowStore } from '@/state/workflow-store';
 import { useFileImport } from '@/hooks/useFileImport';
 import { ColumnPicker } from '@/ui/ColumnPicker';
+import { OptionMultiSelect } from '@/ui/OptionMultiSelect';
 import { ExpressionInput } from '@/ui/ExpressionInput';
 import { CodeInput } from '@/ui/CodeInput';
 import { NodeErrorPanel } from '@/ui/NodeErrorPanel';
@@ -397,6 +398,22 @@ function InspectorFieldRenderer({
             disabled={readOnly}
           />
         );
+      case 'multi-select': {
+        const selected = Array.isArray(config[field.key]) ? (config[field.key] as string[]) : [];
+        const items = field.options.map((opt) => ({
+          value: opt,
+          label: field.optionLabels?.[opt] ?? opt,
+        }));
+        return (
+          <OptionMultiSelect
+            options={items}
+            value={selected}
+            onChange={(v) => onUpdate(field.key, v)}
+            disabled={readOnly}
+            placeholder="Select parts"
+          />
+        );
+      }
       case 'string-list':
         return (
           <StringListEditor

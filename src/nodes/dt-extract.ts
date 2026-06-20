@@ -3,7 +3,7 @@ import type { NodeType } from '@/lib/types';
 import { parseStringArray, validateColumnsExist } from './column-utils';
 import type { NodeDefinition } from './types';
 
-const VALID_PARTS = new Set([
+export const DT_EXTRACT_PARTS = [
   'year',
   'month',
   'day',
@@ -14,7 +14,22 @@ const VALID_PARTS = new Set([
   'weekofyear',
   'is_weekend',
   'dayofyear',
-]);
+] as const;
+
+const VALID_PARTS = new Set<string>(DT_EXTRACT_PARTS);
+
+const PART_LABELS: Record<(typeof DT_EXTRACT_PARTS)[number], string> = {
+  year: 'Year',
+  month: 'Month',
+  day: 'Day',
+  dayofweek: 'Day of week',
+  weekday: 'Weekday',
+  quarter: 'Quarter',
+  hour: 'Hour',
+  weekofyear: 'Week of year',
+  is_weekend: 'Is weekend',
+  dayofyear: 'Day of year',
+};
 
 function parseParts(config: Record<string, unknown>): string[] {
   const raw = parseStringArray(config.parts);
@@ -127,9 +142,11 @@ export const dtExtract: NodeDefinition = {
     return [
       { kind: 'column', key: 'column', label: 'Column' },
       {
-        kind: 'columns',
+        kind: 'multi-select',
         key: 'parts',
         label: 'Parts',
+        options: [...DT_EXTRACT_PARTS],
+        optionLabels: PART_LABELS,
       },
       { kind: 'select', key: 'parse', label: 'Parse strings first', options: ['true', 'false'] },
       { kind: 'text', key: 'format', label: 'Parse format (optional)' },

@@ -42,6 +42,7 @@ export type InspectorField =
   | { kind: 'text'; key: string; label: string }
   | { kind: 'number'; key: string; label: string }
   | { kind: 'select'; key: string; label: string; options: string[] }
+  | { kind: 'multi-select'; key: string; label: string; options: string[]; optionLabels?: Record<string, string> }
   | { kind: 'column'; key: string; label: string; schemaIndex?: number }
   | { kind: 'columns'; key: string; label: string; schemaIndex?: number }
   | { kind: 'string-list'; key: string; label: string }
