@@ -506,6 +506,11 @@ function InspectorFieldRenderer({
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-foreground">{field.label}</span>
+      {'description' in field && field.description ? (
+        <p className="whitespace-pre-line rounded-md border border-border/60 bg-muted/40 px-2 py-1.5 text-[10px] leading-relaxed text-muted-foreground">
+          {field.description}
+        </p>
+      ) : null}
       {renderField()}
       {errors.map((message) => (
         <span key={message} className="text-[10px] text-amber-700">

@@ -46,7 +46,14 @@ export type InspectorField =
   | { kind: 'columns'; key: string; label: string; schemaIndex?: number }
   | { kind: 'string-list'; key: string; label: string }
   | { kind: 'expression'; key: string; label: string }
-  | { kind: 'code'; key: string; label: string; placeholder?: string; minHeight?: string }
+  | {
+      kind: 'code';
+      key: string;
+      label: string;
+      placeholder?: string;
+      minHeight?: string;
+      description?: string;
+    }
   | { kind: 'mapping'; key: string; label: string }
   | { kind: 'dtype-mapping'; key: string; label: string }
   | { kind: 'aggregations'; key: string; label: string }

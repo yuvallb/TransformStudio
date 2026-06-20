@@ -22,8 +22,24 @@ const BLOCKED_PATTERNS = [
 export const CUSTOM_PYTHON_INPUT_ALIAS = 'inp';
 export const CUSTOM_PYTHON_OUTPUT_ALIAS = 'out';
 
-export const CUSTOM_PYTHON_DEFAULT_CODE = `# Input DataFrame is \`${CUSTOM_PYTHON_INPUT_ALIAS}\`. Assign your result to \`${CUSTOM_PYTHON_OUTPUT_ALIAS}\`.
+/** Shown in the inspector above the code editor. */
+export const CUSTOM_PYTHON_INSPECTOR_HELP = [
+  'Pre-loaded names (do not use import):',
+  '• inp — input DataFrame',
+  '• out — assign your result here',
+  '• pd — pandas',
+  '• np — numpy',
+  '• params — workflow parameters, e.g. params["threshold"]',
+  '',
+  'Allowed: assignments, if / for / while, Pandas method calls (including keyword args), and built-ins like len(), min(), max().',
+  '',
+  'Blocked: import, def / class / lambda, try / with, file I/O (open), exec / eval, and attributes starting with _.',
+].join('\n');
+
+export const CUSTOM_PYTHON_DEFAULT_CODE = `# Input DataFrame: \`${CUSTOM_PYTHON_INPUT_ALIAS}\`. Assign the result to \`${CUSTOM_PYTHON_OUTPUT_ALIAS}\`.
+# Pre-loaded: pd, np, params — no import statements needed.
 ${CUSTOM_PYTHON_OUTPUT_ALIAS} = ${CUSTOM_PYTHON_INPUT_ALIAS}.copy()
+# Example: ${CUSTOM_PYTHON_OUTPUT_ALIAS} = ${CUSTOM_PYTHON_INPUT_ALIAS}.reset_index(drop=True)
 `;
 
 export function isCustomPythonSafe(code: string): boolean {
@@ -102,6 +118,7 @@ export const customPython: PaletteNodeDefinition = {
         key: 'code',
         label: 'Python code',
         minHeight: '180px',
+        description: CUSTOM_PYTHON_INSPECTOR_HELP,
       },
     ];
   },

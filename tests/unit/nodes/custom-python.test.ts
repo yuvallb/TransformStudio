@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CUSTOM_PYTHON_DEFAULT_CODE,
   CUSTOM_PYTHON_INPUT_ALIAS,
+  CUSTOM_PYTHON_INSPECTOR_HELP,
   CUSTOM_PYTHON_OUTPUT_ALIAS,
   customPython,
   isCustomPythonSafe,
@@ -56,8 +57,14 @@ describe('customPython', () => {
     expect(CUSTOM_PYTHON_DEFAULT_CODE).toContain('out = inp.copy()');
   });
 
-  it('uses code inspector field kind', () => {
-    expect(customPython.inspectorSchema()[0]?.kind).toBe('code');
+  it('uses code inspector field kind with help text', () => {
+    const field = customPython.inspectorSchema()[0];
+    expect(field?.kind).toBe('code');
+    if (field?.kind === 'code') {
+      expect(field.description).toBe(CUSTOM_PYTHON_INSPECTOR_HELP);
+      expect(field.description).toContain('pd');
+      expect(field.description).toContain('params');
+    }
   });
 
   it('is marked advanced in palette', () => {

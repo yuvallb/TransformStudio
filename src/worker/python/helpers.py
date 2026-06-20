@@ -258,6 +258,7 @@ def validate_custom_python(code):
             ast.USub,
             ast.UAdd,
             ast.Not,
+            ast.keyword,
         ):
             if node_type is ast.Attribute and node.attr.startswith("_"):
                 return {"valid": False, "error": f"Attribute '{node.attr}' not allowed"}
