@@ -16,7 +16,7 @@ describe('strSplit', () => {
     );
     expect(code).toContain('.str.split(');
     expect(code).toContain('expand=True');
-    expect(code).toContain('.join(');
+    expect(code).toContain('pd.concat(');
   });
 
   it('compiles explode split', () => {

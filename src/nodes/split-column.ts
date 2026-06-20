@@ -125,7 +125,7 @@ export const splitColumn = {
       { kind: 'column', key: 'column', label: 'Column' },
       { kind: 'text', key: 'pat', label: 'Delimiter / pattern' },
       { kind: 'select', key: 'regex', label: 'Regex', options: ['false', 'true'] },
-      { kind: 'columns', key: 'into', label: 'Output column names' },
+      { kind: 'string-list', key: 'into', label: 'Output column names' },
       { kind: 'select', key: 'expand', label: 'Expand', options: ['true', 'false'] },
       { kind: 'number', key: 'n', label: 'Max splits (-1 = all)' },
     ];

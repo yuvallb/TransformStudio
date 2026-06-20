@@ -355,6 +355,15 @@ function InspectorFieldRenderer({
             disabled={readOnly}
           />
         );
+      case 'string-list':
+        return (
+          <StringListEditor
+            values={Array.isArray(config[field.key]) ? (config[field.key] as string[]) : []}
+            onChange={(v) => onUpdate(field.key, v)}
+            placeholder="Column name"
+            readOnly={readOnly}
+          />
+        );
       case 'expression':
         return (
           <ExpressionInput
@@ -424,6 +433,63 @@ function InspectorFieldRenderer({
         </span>
       ))}
     </label>
+  );
+}
+
+function StringListEditor({
+  values,
+  onChange,
+  placeholder = 'Name',
+  readOnly = false,
+}: {
+  values: string[];
+  onChange: (values: string[]) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+}) {
+  const updateValue = (index: number, value: string) => {
+    const next = [...values];
+    next[index] = value;
+    onChange(next);
+  };
+
+  const addValue = () => {
+    onChange([...values, '']);
+  };
+
+  const removeValue = (index: number) => {
+    onChange(values.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      {values.map((value, i) => (
+        <div key={i} className="flex gap-1">
+          <Input
+            value={value}
+            readOnly={readOnly}
+            disabled={readOnly}
+            onChange={(e) => updateValue(i, e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 text-xs"
+          />
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => removeValue(i)}
+              className="px-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      {!readOnly && (
+        <button type="button" onClick={addValue} className="text-xs text-primary hover:underline">
+          + Add name
+        </button>
+      )}
+    </div>
   );
 }
 

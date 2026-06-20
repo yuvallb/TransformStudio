@@ -90,7 +90,7 @@ export const strSplit: NodeDefinition = {
     if (into.length > 0) {
       lines.push(`${tmpSplit}.columns = [${into.map((c) => JSON.stringify(c)).join(', ')}]`);
     }
-    lines.push(`${outputVar} = ${input}.join(${tmpSplit})`);
+    lines.push(`${outputVar} = pd.concat([${input}, ${tmpSplit}], axis=1)`);
     return lines.join('\n');
   },
 
@@ -101,7 +101,7 @@ export const strSplit: NodeDefinition = {
       { kind: 'select', key: 'expand', label: 'Expand to columns', options: ['true', 'false'] },
       { kind: 'select', key: 'explode', label: 'Explode to rows', options: ['true', 'false'] },
       { kind: 'number', key: 'n', label: 'Max splits (-1 = all)' },
-      { kind: 'columns', key: 'into', label: 'Output column names' },
+      { kind: 'string-list', key: 'into', label: 'Output column names' },
     ];
   },
 

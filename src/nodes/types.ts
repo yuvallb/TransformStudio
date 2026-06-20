@@ -44,6 +44,7 @@ export type InspectorField =
   | { kind: 'select'; key: string; label: string; options: string[] }
   | { kind: 'column'; key: string; label: string; schemaIndex?: number }
   | { kind: 'columns'; key: string; label: string; schemaIndex?: number }
+  | { kind: 'string-list'; key: string; label: string }
   | { kind: 'expression'; key: string; label: string }
   | { kind: 'mapping'; key: string; label: string }
   | { kind: 'dtype-mapping'; key: string; label: string }
