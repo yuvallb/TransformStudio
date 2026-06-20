@@ -33,6 +33,9 @@ const nodeTypes = { transformNode: NodeRenderer };
 const FLOW_NODE_WIDTH = 180;
 const FLOW_NODE_HEIGHT = 120;
 
+/** Finger taps on touch devices often jitter; keep click and drag thresholds equal. */
+const NODE_TAP_DISTANCE_PX = 10;
+
 function toFlowNodes(workflowNodes: WorkflowNode[]): Node<TransformNodeData>[] {
   return workflowNodes.map((n) => ({
     id: n.id,
@@ -318,6 +321,13 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
     selectNode(null);
   }, [selectNode]);
 
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node<TransformNodeData>) => {
+      selectNode(node.id);
+    },
+    [selectNode],
+  );
+
   return (
     <div className="h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
@@ -328,6 +338,9 @@ export function FlowCanvas({ onDropFile }: FlowCanvasProps) {
         onEdgesChange={onEdgesChange}
         onConnect={compareMode ? undefined : onConnect}
         onPaneClick={onPaneClick}
+        onNodeClick={onNodeClick}
+        nodeDragThreshold={NODE_TAP_DISTANCE_PX}
+        nodeClickDistance={NODE_TAP_DISTANCE_PX}
         nodesDraggable={!compareMode}
         nodesConnectable={!compareMode}
         elementsSelectable
