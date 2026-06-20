@@ -172,6 +172,8 @@ export function getValidateContext(
 
 export interface BuildPipelineResult extends ExecutePipelineRequest {
   validationFailures: { nodeId: string; message: string }[];
+  /** Stale nodes not scheduled (missing inputs/dataset, blocked upstream, or cache hit). */
+  deferredStaleNodeIds: string[];
 }
 
 async function validateExpressionForNode(
@@ -218,7 +220,12 @@ export async function buildPipelineRequest(
   const paramRecord = getEffectiveParams(workflow.params, paramOverrides);
   const nodes: ExecutePipelineRequest['nodes'] = [];
   const validationFailures: BuildPipelineResult['validationFailures'] = [];
+  const deferredStaleNodeIds: string[] = [];
   const plannedIds = new Set<string>();
+
+  const deferStale = (nodeId: string, isStale: boolean) => {
+    if (isStale) deferredStaleNodeIds.push(nodeId);
+  };
 
   for (const node of sorted) {
     const def = getNodeDefinition(node.type);
@@ -228,22 +235,27 @@ export async function buildPipelineRequest(
     const dataset = datasets[node.id];
 
     if (def.inputs.length > 0 && inputVars.length < def.inputs.length) {
+      deferStale(node.id, isStale);
       continue;
     }
 
     if (def.inputs.length > 0 && !upstreamIsReady(node.id, workflow, staleNodeIds, runtimeByNode, plannedIds)) {
+      deferStale(node.id, isStale);
       continue;
     }
 
     if (node.type === 'source.csv' && !dataset) {
+      deferStale(node.id, isStale);
       continue;
     }
 
     if (node.type === 'source.json' && !dataset) {
+      deferStale(node.id, isStale);
       continue;
     }
 
     if (node.type === 'source.parquet' && !dataset) {
+      deferStale(node.id, isStale);
       continue;
     }
 
@@ -283,7 +295,10 @@ export async function buildPipelineRequest(
     const cached = runtimeByNode.get(node.id);
     const needsRun = isStale || cached?.fingerprint !== fingerprint;
 
-    if (!needsRun) continue;
+    if (!needsRun) {
+      deferStale(node.id, isStale);
+      continue;
+    }
 
     const code = def.compile(node.config, inputVars, outputVar, paramRecord, {
       mode: 'execution',
@@ -316,7 +331,7 @@ export async function buildPipelineRequest(
     plannedIds.add(node.id);
   }
 
-  return { nodes, params: paramRecord, validationFailures };
+  return { nodes, params: paramRecord, validationFailures, deferredStaleNodeIds };
 }
 
 export async function updateRuntimeFingerprints(

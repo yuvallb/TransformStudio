@@ -51,7 +51,7 @@ export function useExecution() {
         paramOverrides,
       });
 
-      const resolvedNodeIds = new Set<string>();
+      const resolvedNodeIds = new Set<string>(request.deferredStaleNodeIds);
 
       if (request.validationFailures.length > 0) {
         const updatedRuntime = new Map(useRuntimeStore.getState().byNodeId);
