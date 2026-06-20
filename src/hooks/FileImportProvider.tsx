@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { getNextNodePlacementPosition } from '@/canvas/node-placement';
 import { FileImportContext } from '@/hooks/file-import-context';
 import { detectDelimiter } from '@/lib/delimiter';
 import { LARGE_FILE_WARN_BYTES } from '@/lib/constants';
@@ -26,7 +27,9 @@ interface ImportContext {
 export function FileImportProvider({ children }: { children: ReactNode }) {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
-  const importContextRef = useRef<ImportContext>({ position: { x: 120, y: 120 } });
+  const importContextRef = useRef<ImportContext>({
+    position: getNextNodePlacementPosition(useWorkflowStore.getState().workflow.nodes),
+  });
 
   const addNode = useWorkflowStore((s) => s.addNode);
   const setDataset = useWorkflowStore((s) => s.setDataset);
@@ -114,7 +117,9 @@ export function FileImportProvider({ children }: { children: ReactNode }) {
     ) => {
       importContextRef.current = {
         nodeId: opts?.nodeId,
-        position: opts?.position ?? { x: 120, y: 120 },
+        position:
+          opts?.position ??
+          getNextNodePlacementPosition(useWorkflowStore.getState().workflow.nodes),
       };
       if (nodeType === 'source.json') {
         jsonInputRef.current?.click();

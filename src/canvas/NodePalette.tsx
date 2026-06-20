@@ -1,6 +1,7 @@
 import { ChevronDown, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { getNextNodePlacementPosition } from '@/canvas/node-placement';
 import { requestAddNode } from '@/lib/custom-python-gate';
 import { useFileImport } from '@/hooks/useFileImport';
 import { getNodeIcon } from '@/nodes/node-icons';
@@ -59,8 +60,7 @@ export function NodePalette() {
 
   const onAddClick = (type: NodeType) => {
     const state = useWorkflowStore.getState();
-    const index = state.workflow.nodes.length;
-    const position = { x: 80 + index * 220, y: 180 };
+    const position = getNextNodePlacementPosition(state.workflow.nodes);
 
     if (getNodeDefinition(type).category === 'source') {
       requestImport(type as 'source.csv' | 'source.json', { position });
