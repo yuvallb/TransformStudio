@@ -6,8 +6,8 @@ import {
   MiniMap,
   applyEdgeChanges,
   applyNodeChanges,
-  getNodesBounds,
   useNodesInitialized,
+  useReactFlow,
   useStore,
   useViewport,
   type Connection,
@@ -71,11 +71,14 @@ function toFlowEdges(workflowEdges: WorkflowEdge[]): Edge[] {
   }));
 }
 
+type GetNodesBounds = ReturnType<typeof useReactFlow>['getNodesBounds'];
+
 function areAllNodesInViewport(
   nodes: Node[],
   viewport: Viewport,
   width: number,
   height: number,
+  getNodesBounds: GetNodesBounds,
 ): boolean {
   if (nodes.length === 0) return true;
 
@@ -98,6 +101,7 @@ function areAllNodesInViewport(
 }
 
 function CanvasMiniMap() {
+  const { getNodesBounds } = useReactFlow();
   const viewport = useViewport();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -108,7 +112,7 @@ function CanvasMiniMap() {
     nodesInitialized &&
     width > 0 &&
     height > 0 &&
-    !areAllNodesInViewport(nodes, viewport, width, height);
+    !areAllNodesInViewport(nodes, viewport, width, height, getNodesBounds);
 
   if (!showMinimap) return null;
 

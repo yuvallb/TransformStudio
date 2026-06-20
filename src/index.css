@@ -85,4 +85,24 @@
     margin: 0;
     height: 100dvh;
   }
+
+  /* Keep toast stack in the lower viewport; pass clicks through empty space */
+  [data-sonner-toaster].toaster[data-y-position='bottom'] {
+    top: 50vh;
+    bottom: 2.25rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    pointer-events: none;
+    scrollbar-width: thin;
+  }
+
+  [data-sonner-toaster].toaster [data-sonner-toast] {
+    pointer-events: auto;
+  }
+
+  [data-sonner-toast][data-styled='true'] {
+    max-height: 7rem;
+    overflow-y: auto;
+    align-items: flex-start;
+  }
 }

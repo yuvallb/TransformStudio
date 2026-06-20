@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 
 import { CycleError } from '@/engine/topo-sort';
 import { buildPipelineRequest, updateRuntimeFingerprints } from '@/engine/pipeline';
@@ -11,7 +10,6 @@ import { useWorkflowStore } from '@/state/workflow-store';
 export function useExecution() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
-  const toastedErrorsRef = useRef(new Set<string>());
 
   const workflow = useWorkflowStore((s) => s.workflow);
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
@@ -28,12 +26,6 @@ export function useExecution() {
   const byNodeId = useRuntimeStore((s) => s.byNodeId);
   const clearNode = useRuntimeStore((s) => s.clearNode);
 
-  const toastErrorOnce = useCallback((message: string) => {
-    if (toastedErrorsRef.current.has(message)) return;
-    toastedErrorsRef.current.add(message);
-    toast.error(message);
-  }, []);
-
   const runPipeline = useCallback(async () => {
     if (runningRef.current) return;
 
@@ -43,7 +35,6 @@ export function useExecution() {
     runningRef.current = true;
     setIsRunning(true);
     setGraphError(null);
-    toastedErrorsRef.current.clear();
 
     try {
       const deleteNodeIds = consumeDeletedNodeIds();
@@ -107,7 +98,6 @@ export function useExecution() {
 
       if (result.error && Object.keys(result.nodeResults).length === 0) {
         setGraphError(result.error.message);
-        toastErrorOnce(result.error.message);
         return;
       }
 
@@ -117,9 +107,6 @@ export function useExecution() {
       for (const [nodeId, state] of Object.entries(result.nodeResults)) {
         updatedRuntime.set(nodeId, state);
         resolvedNodeIds.add(nodeId);
-        if (state.status === 'error') {
-          toastErrorOnce(`Node failed: ${state.error ?? result.error?.message ?? 'Unknown error'}`);
-        }
       }
 
       updatedRuntime = await updateRuntimeFingerprints(
@@ -139,11 +126,9 @@ export function useExecution() {
     } catch (err) {
       if (err instanceof CycleError) {
         setGraphError(err.message);
-        toastErrorOnce(err.message);
       } else {
         const message = err instanceof Error ? err.message : String(err);
         setGraphError(message);
-        toastErrorOnce(message);
       }
     } finally {
       for (const node of workflow.nodes) {
@@ -167,7 +152,6 @@ export function useExecution() {
     setGraphError,
     setIsRunning,
     setRunning,
-    toastErrorOnce,
   ]);
 
   const scheduleRun = useCallback(() => {
