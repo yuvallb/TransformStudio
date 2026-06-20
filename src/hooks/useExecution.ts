@@ -7,42 +7,42 @@ import { EXECUTION_DEBOUNCE_MS } from '@/lib/constants';
 import { useRuntimeStore } from '@/state/runtime-store';
 import { useWorkflowStore } from '@/state/workflow-store';
 
+const runPipelineRef: { current: (() => Promise<void>) | null } = { current: null };
+
+/** Manual pipeline trigger (e.g. Run with parameters). Requires `useExecution()` mounted once. */
+export async function runPipelineNow(): Promise<void> {
+  await runPipelineRef.current?.();
+}
+
 export function useExecution() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
 
-  const workflow = useWorkflowStore((s) => s.workflow);
   const staleNodeIds = useWorkflowStore((s) => s.staleNodeIds);
   const deletedNodeIds = useWorkflowStore((s) => s.deletedNodeIds);
   const isHydrated = useWorkflowStore((s) => s.isHydrated);
-  const datasets = useWorkflowStore((s) => s.datasets);
-  const clearStaleForNodes = useWorkflowStore((s) => s.clearStaleForNodes);
-  const consumeDeletedNodeIds = useWorkflowStore((s) => s.consumeDeletedNodeIds);
-
-  const setNodeStates = useRuntimeStore((s) => s.setNodeStates);
-  const setGraphError = useRuntimeStore((s) => s.setGraphError);
-  const setIsRunning = useRuntimeStore((s) => s.setIsRunning);
-  const setRunning = useRuntimeStore((s) => s.setRunning);
-  const byNodeId = useRuntimeStore((s) => s.byNodeId);
-  const clearNode = useRuntimeStore((s) => s.clearNode);
 
   const runPipeline = useCallback(async () => {
     if (runningRef.current) return;
 
-    const pendingDeletes = useWorkflowStore.getState().deletedNodeIds;
-    if (workflow.nodes.length === 0 && pendingDeletes.length === 0) return;
+    const workflowState = useWorkflowStore.getState();
+    const pendingDeletes = workflowState.deletedNodeIds;
+    if (workflowState.workflow.nodes.length === 0 && pendingDeletes.length === 0) return;
 
     runningRef.current = true;
-    setIsRunning(true);
-    setGraphError(null);
+    const runtimeActions = useRuntimeStore.getState();
+    runtimeActions.setIsRunning(true);
+    runtimeActions.setGraphError(null);
+
+    const { workflow, staleNodeIds, datasets, paramOverrides } = workflowState;
 
     try {
-      const deleteNodeIds = consumeDeletedNodeIds();
+      const deleteNodeIds = workflowState.consumeDeletedNodeIds();
       for (const nodeId of deleteNodeIds) {
-        clearNode(nodeId);
+        runtimeActions.clearNode(nodeId);
       }
 
-      const paramOverrides = useWorkflowStore.getState().paramOverrides;
+      const byNodeId = useRuntimeStore.getState().byNodeId;
       const request = await buildPipelineRequest({
         workflow,
         staleNodeIds,
@@ -54,7 +54,7 @@ export function useExecution() {
       const resolvedNodeIds = new Set<string>();
 
       if (request.validationFailures.length > 0) {
-        const updatedRuntime = new Map(byNodeId);
+        const updatedRuntime = new Map(useRuntimeStore.getState().byNodeId);
         for (const failure of request.validationFailures) {
           resolvedNodeIds.add(failure.nodeId);
           const existing = updatedRuntime.get(failure.nodeId);
@@ -68,12 +68,12 @@ export function useExecution() {
             traceback: null,
           });
         }
-        setNodeStates(Object.fromEntries(updatedRuntime.entries()));
+        runtimeActions.setNodeStates(Object.fromEntries(updatedRuntime.entries()));
       }
 
       if (request.nodes.length === 0 && deleteNodeIds.length === 0) {
         if (resolvedNodeIds.size > 0) {
-          clearStaleForNodes([...resolvedNodeIds]);
+          workflowState.clearStaleForNodes([...resolvedNodeIds]);
         }
         return;
       }
@@ -81,13 +81,13 @@ export function useExecution() {
       if (request.nodes.length > 0) {
         const cleared = new Map(useRuntimeStore.getState().byNodeId);
         for (const node of request.nodes) {
-          setRunning(node.nodeId, true);
+          runtimeActions.setRunning(node.nodeId, true);
           const existing = cleared.get(node.nodeId);
           if (existing) {
             cleared.set(node.nodeId, { ...existing, profile: null });
           }
         }
-        setNodeStates(Object.fromEntries(cleared.entries()));
+        runtimeActions.setNodeStates(Object.fromEntries(cleared.entries()));
       }
 
       const result = await kernelClient.executePipeline({
@@ -97,11 +97,11 @@ export function useExecution() {
       });
 
       if (result.error && Object.keys(result.nodeResults).length === 0) {
-        setGraphError(result.error.message);
+        runtimeActions.setGraphError(result.error.message);
         return;
       }
 
-      let updatedRuntime = new Map(byNodeId);
+      let updatedRuntime = new Map(useRuntimeStore.getState().byNodeId);
       const executedNodeIds = Object.keys(result.nodeResults);
 
       for (const [nodeId, state] of Object.entries(result.nodeResults)) {
@@ -117,49 +117,40 @@ export function useExecution() {
         paramOverrides,
       );
 
-      const statesObj = Object.fromEntries(updatedRuntime.entries());
-      setNodeStates(statesObj);
-
       if (resolvedNodeIds.size > 0) {
-        clearStaleForNodes([...resolvedNodeIds]);
+        useWorkflowStore.getState().clearStaleForNodes([...resolvedNodeIds]);
       }
+
+      runtimeActions.setNodeStates(Object.fromEntries(updatedRuntime.entries()));
     } catch (err) {
       if (err instanceof CycleError) {
-        setGraphError(err.message);
+        runtimeActions.setGraphError(err.message);
       } else {
         const message = err instanceof Error ? err.message : String(err);
-        setGraphError(message);
+        runtimeActions.setGraphError(message);
       }
     } finally {
-      for (const node of workflow.nodes) {
-        const runtime = useRuntimeStore.getState().byNodeId.get(node.id);
+      const latestWorkflow = useWorkflowStore.getState().workflow;
+      const latestRuntime = useRuntimeStore.getState();
+      for (const node of latestWorkflow.nodes) {
+        const runtime = latestRuntime.byNodeId.get(node.id);
         if (runtime?.status === 'running') {
-          setRunning(node.id, false);
+          latestRuntime.setRunning(node.id, false);
         }
       }
       runningRef.current = false;
-      setIsRunning(false);
+      latestRuntime.setIsRunning(false);
     }
-  }, [
-    workflow,
-    staleNodeIds,
-    datasets,
-    byNodeId,
-    clearStaleForNodes,
-    consumeDeletedNodeIds,
-    clearNode,
-    setNodeStates,
-    setGraphError,
-    setIsRunning,
-    setRunning,
-  ]);
+  }, []);
+
+  runPipelineRef.current = runPipeline;
 
   const scheduleRun = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      void runPipeline();
+      void runPipelineRef.current?.();
     }, EXECUTION_DEBOUNCE_MS);
-  }, [runPipeline]);
+  }, []);
 
   useEffect(() => {
     if (!isHydrated) return;

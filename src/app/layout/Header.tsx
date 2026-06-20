@@ -1,6 +1,6 @@
 import { History, Play, Share2, Download, FilePlus, GitCompare } from 'lucide-react';
 
-import { useExecution } from '@/hooks/useExecution';
+import { runPipelineNow } from '@/hooks/useExecution';
 import { SITE } from '@/lib/site-config';
 import { AboutDialog } from '@/ui/AboutDialog';
 import { BrandLogo } from '@/ui/BrandLogo';
@@ -17,7 +17,6 @@ import { useWorkflowStore } from '@/state/workflow-store';
 export function Header() {
   const workflow = useWorkflowStore((s) => s.workflow);
   const paramCount = workflow.params.length;
-  const { runPipeline } = useExecution();
   const isRunning = useRuntimeStore((s) => s.isRunning);
 
   const saveStatus = useUiStore((s) => s.saveStatus);
@@ -150,7 +149,7 @@ export function Header() {
         onOpenChange={setParamDialogOpen}
         onRun={(overrides) => {
           useWorkflowStore.getState().setParamOverrides(overrides);
-          void runPipeline();
+          void runPipelineNow();
         }}
       />
 
